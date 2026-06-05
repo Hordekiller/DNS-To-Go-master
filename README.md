@@ -32,4 +32,4 @@ To build the APK, run:
 
 ## 📄 License
 This project is licensed under the MIT License.
-Copyright (c) 2026 Dns To Go Team.
+Copyright (c) 2026 HordeKiller.
