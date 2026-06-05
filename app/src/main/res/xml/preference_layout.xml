@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory android:title="@string/general_settings">
+
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="startBoot"
+            android:title="@string/auto_start" />
+
+        <ListPreference
+            android:defaultValue="en"
+            android:entries="@array/language_entries"
+            android:entryValues="@array/language_values"
+            android:key="language"
+            android:title="Language / زبان" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Gamer Theme Colors -->
+    <color name="colorPrimary">#0D0D0D</color> <!-- Deep Black -->
+    <color name="colorPrimaryDark">#000000</color>
+    <color name="colorAccent">#00FFC2</color> <!-- Neon Cyan/Mint -->
+
+    <color name="colorBackground">#0D0D0D</color>
+    <color name="colorSurface">#1A1A1A</color> <!-- Dark Grey Surface -->
+    <color name="colorOnSurface">#FFFFFF</color>
+
+    <color name="neon_blue">#00D4FF</color>
+    <color name="neon_purple">#B026FF</color>
+    <color name="neon_green">#39FF14</color>
+
+    <color name="colorWhite">#FFFFFF</color>
+    <color name="colorRed">#FF3131</color> <!-- Neon Red -->
+    <color name="colorGray">#888888</color>
+</resources>

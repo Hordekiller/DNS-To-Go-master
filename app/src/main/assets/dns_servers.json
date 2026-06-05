@@ -1,0 +1,69 @@
+{
+  "modelList": [
+    {
+      "name": "Cloudflare",
+      "firstDNS": "1.1.1.1",
+      "secondDNS": "1.0.0.1",
+      "ipv6": "2606:4700:4700::1111",
+      "category": "Public",
+      "description": "Fastest and most private DNS service globally.",
+      "features": ["Privacy", "DoH", "Fast"]
+    },
+    {
+      "name": "Radar Game",
+      "firstDNS": "10.202.10.10",
+      "secondDNS": "10.202.10.11",
+      "category": "Gaming",
+      "description": "Reduced ping and sanction bypass for Iranian gamers.",
+      "features": ["Gaming", "Anti-Sanction", "Low-Latency"]
+    },
+    {
+      "name": "Electro",
+      "firstDNS": "78.157.42.100",
+      "secondDNS": "78.157.42.101",
+      "category": "Gaming",
+      "description": "High-performance gaming DNS with bypass capabilities.",
+      "features": ["Gaming", "Bypass"]
+    },
+    {
+      "name": "Shecan",
+      "firstDNS": "178.22.122.100",
+      "secondDNS": "185.51.200.2",
+      "category": "Streaming",
+      "description": "Bypass regional restrictions for Netflix, YouTube, and more.",
+      "features": ["Streaming", "Smart-DNS", "Bypass"]
+    },
+    {
+      "name": "403 Online",
+      "firstDNS": "10.202.10.202",
+      "secondDNS": "10.202.10.102",
+      "category": "Streaming",
+      "description": "Specialized in bypassing developer and streaming blocks.",
+      "features": ["Streaming", "Bypass", "Fast"]
+    },
+    {
+      "name": "AdGuard",
+      "firstDNS": "94.140.14.14",
+      "secondDNS": "94.140.15.15",
+      "category": "Security",
+      "description": "Blocks ads, trackers, and phishing globally.",
+      "features": ["Ad-Block", "Privacy", "Security"]
+    },
+    {
+      "name": "Quad9 Secure",
+      "firstDNS": "9.9.9.9",
+      "secondDNS": "149.112.112.112",
+      "category": "Privacy",
+      "description": "Maximum privacy with malware protection.",
+      "features": ["Privacy", "Malware-Block"]
+    },
+    {
+      "name": "MCI Internal",
+      "firstDNS": "217.218.155.155",
+      "secondDNS": "217.218.127.127",
+      "category": "Region-Specific",
+      "description": "Optimized for MCI (Hamrah Aval) network users.",
+      "features": ["Stable", "ISP-Optimized"]
+    }
+  ]
+}
