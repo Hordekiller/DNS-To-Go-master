@@ -85,7 +85,7 @@
                     android:layout_height="wrap_content"
                     android:paddingHorizontal="16dp"
                     android:paddingVertical="6dp"
-                    android:text="Version 2.5.0"
+                    android:text="Version 2.5.1"
                     android:textColor="@color/colorAccent"
                     android:textSize="12sp"
                     android:textStyle="bold" />
