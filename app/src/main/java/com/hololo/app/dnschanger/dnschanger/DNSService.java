@@ -87,7 +87,7 @@ public class DNSService extends VpnService {
     private FileOutputStream outputStream;
     private Thread mThread;
     private volatile boolean shouldRun = true;
-    private DNSModel dnsModel;
+    private volatile DNSModel dnsModel;
     private SharedPreferences preferences;
 
     private long startRxBytes = 0;
@@ -334,8 +334,6 @@ public class DNSService extends VpnService {
         }
         rxBus.sendEvent(new StartEvent());
 
-        startRxBytes = TrafficStats.getUidRxBytes(android.os.Process.myUid());
-        startTxBytes = TrafficStats.getUidTxBytes(android.os.Process.myUid());
         updateHandler.post(updateRunnable);
 
         showNotification();
@@ -390,9 +388,8 @@ public class DNSService extends VpnService {
                                 handlePacket(packet, length);
                                 packet.clear();
                             }
-                        } catch (IOException e) {
-                            if (shouldRun) Timber.e(e, "Error reading from TUN");
-                            break;
+                        } catch (Exception e) {
+                            if (shouldRun) Timber.e(e, "Error processing TUN packet");
                         }
                     }
                 }
@@ -453,6 +450,7 @@ public class DNSService extends VpnService {
             // Position is already at dnsOffset + 6, we need to skip 6 more bytes to get to Question
             // QD (2) + AN (2) + NS (2) + AR (2) = 8 bytes after ID(2) and Flags(2).
             // Currently at Offset+6 (ID, Flags, QD). Next are AN, NS, AR (6 bytes).
+            if (packet.remaining() < 6) return;
             packet.getShort(); // AN
             packet.getShort(); // NS
             packet.getShort(); // AR
@@ -477,8 +475,10 @@ public class DNSService extends VpnService {
                 if (cachedResponse != null) {
                     LogManager.addLog(this, domain + " | ALLOWED | Cache");
                     ByteBuffer responseBuf = ByteBuffer.wrap(cachedResponse.clone());
-                    responseBuf.putShort((short) transactionId);
-                    handleDoHResponse(responseBuf.array(), packet, dnsOffset);
+                    if (responseBuf.remaining() >= 2) {
+                        responseBuf.putShort((short) transactionId);
+                        handleDoHResponse(responseBuf.array(), packet, dnsOffset);
+                    }
                     return;
                 }
 
@@ -495,7 +495,7 @@ public class DNSService extends VpnService {
     private void forwardToDoH(byte[] rawQuery, ByteBuffer originalPacket, int dnsOffset, String domain, int type) {
         String dohUrl = (dnsModel != null && dnsModel.getFirstDns() != null && dnsModel.getFirstDns().startsWith("http")) 
                 ? dnsModel.getFirstDns() 
-                : "https://cloudflare-dns.com/dns-query";
+                : "https://1.1.1.1/dns-query";
 
         RequestBody body = RequestBody.create(rawQuery, MediaType.parse("application/dns-message"));
         Request request = new Request.Builder()
@@ -564,39 +564,49 @@ public class DNSService extends VpnService {
             buf.position(4);
             int qdCount = buf.getShort() & 0xFFFF;
             int anCount = buf.getShort() & 0xFFFF;
+            if (buf.remaining() < 4) return 60;
             buf.position(12);
             
-            // Skip questions
+            // Skip questions safely
             for (int i = 0; i < qdCount; i++) {
+                if (!buf.hasRemaining()) break;
                 skipDomainName(buf);
+                if (buf.remaining() < 4) break;
                 buf.getShort(); // Type
                 buf.getShort(); // Class
             }
             
-            // Parse Answers
+            // Parse Answers safely
             long minTtl = 300; // Default 5 mins
             for (int i = 0; i < anCount; i++) {
+                if (!buf.hasRemaining()) break;
                 skipDomainName(buf);
+                if (buf.remaining() < 10) break; // Type(2) + Class(2) + TTL(4) + RDLen(2)
                 buf.getShort(); // Type
                 buf.getShort(); // Class
                 long ttl = buf.getInt() & 0xFFFFFFFFL;
                 if (i == 0 || ttl < minTtl) minTtl = ttl;
                 int rdLength = buf.getShort() & 0xFFFF;
+                if (buf.remaining() < rdLength) break;
                 buf.position(buf.position() + rdLength);
             }
             return Math.max(minTtl, 10); // Minimum 10 seconds
         } catch (Exception e) {
+            Timber.e(e, "Error extracting TTL");
             return 60; // Fallback 1 minute
         }
     }
 
     private void skipDomainName(ByteBuffer buf) {
-        int len;
-        while ((len = buf.get() & 0xFF) > 0) {
+        int depth = 0;
+        while (buf.hasRemaining() && depth++ < 10) {
+            int len = buf.get() & 0xFF;
+            if (len == 0) return;
             if ((len & 0xC0) == 0xC0) {
-                buf.get(); // Skip pointer byte
+                if (buf.hasRemaining()) buf.get(); // Skip pointer
                 return;
             }
+            if (buf.remaining() < len) break;
             buf.position(buf.position() + len);
         }
     }
@@ -804,8 +814,8 @@ public class DNSService extends VpnService {
             
             if ((labelLength & 0xC0) == 0xC0) { // Compression pointer
                 if (packet.hasRemaining()) {
-                    packet.get(); // Skip pointer
-                    domain.append("[compressed]");
+                    packet.get(); // Skip pointer byte
+                    if (domain.length() == 0) domain.append("[compressed]");
                 }
                 break;
             }
@@ -819,6 +829,6 @@ public class DNSService extends VpnService {
         if (domain.length() > 0 && domain.charAt(domain.length() - 1) == '.') {
             domain.setLength(domain.length() - 1);
         }
-        return domain.toString();
+        return domain.length() == 0 ? "unknown" : domain.toString();
     }
 }

@@ -6,6 +6,7 @@ import android.net.Uri;
 import androidx.core.content.FileProvider;
 import androidx.preference.PreferenceManager;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import java.io.File;
 import java.io.FileWriter;
@@ -21,6 +22,7 @@ public class LogManager {
     private static final String PREF_LOGS = "app_logs";
     private static final int MAX_LOGS = 500;
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
+    private static final Gson gson = new GsonBuilder().create();
 
     public static void addLog(Context context, String message) {
         // Optimized structured message
@@ -36,14 +38,18 @@ public class LogManager {
         
         PreferenceManager.getDefaultSharedPreferences(context)
                 .edit()
-                .putString(PREF_LOGS, new Gson().toJson(logs))
+                .putString(PREF_LOGS, gson.toJson(logs))
                 .apply();
     }
 
     public static List<String> getLogs(Context context) {
         String logsJson = PreferenceManager.getDefaultSharedPreferences(context).getString(PREF_LOGS, "[]");
         Type listType = new TypeToken<ArrayList<String>>(){}.getType();
-        return new Gson().fromJson(logsJson, listType);
+        try {
+            return gson.fromJson(logsJson, listType);
+        } catch (Exception e) {
+            return new ArrayList<>();
+        }
     }
 
     public static void clearLogs(Context context) {
