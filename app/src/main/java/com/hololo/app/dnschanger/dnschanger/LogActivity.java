@@ -59,6 +59,9 @@ public class LogActivity extends AppCompatActivity {
             LogManager.clearLogs(this);
             loadLogs();
             return true;
+        } else if (item.getItemId() == R.id.export_logs) {
+            LogManager.exportToCSV(this);
+            return true;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -85,7 +88,15 @@ public class LogActivity extends AppCompatActivity {
 
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-            holder.textView.setText(logs.get(position));
+            String log = logs.get(position);
+            holder.textView.setText(log);
+            if (log.contains("BLOCKED")) {
+                holder.textView.setTextColor(0xFFFF4444); // Material Red
+            } else if (log.contains("Cache")) {
+                holder.textView.setTextColor(0xFF00FFC2); // Accent Neon
+            } else {
+                holder.textView.setTextColor(0xFFFFFFFF);
+            }
         }
 
         @Override

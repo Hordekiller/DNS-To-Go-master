@@ -6,6 +6,10 @@
         android:title="@string/settings" />
 
     <item
+        android:id="@+id/apps"
+        android:title="@string/per_app_routing" />
+
+    <item
         android:id="@+id/logs"
         android:title="@string/logs" />
 

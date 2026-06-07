@@ -10,6 +10,7 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SYSTEM_EXEMPTED" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" />
 
     <application
         android:name=".DNSChangerApp"
@@ -45,6 +46,10 @@
 
         <activity
             android:name=".dnschanger.LogActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".dnschanger.AppFilterActivity"
             android:exported="false" />
 
         <activity

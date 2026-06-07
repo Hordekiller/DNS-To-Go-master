@@ -82,4 +82,8 @@ class DNSPresenter {
     public void getServiceInfo() {
         rxBus.sendEvent(new GetServiceInfo());
     }
+
+    public io.reactivex.Observable<Object> getEvents() {
+        return rxBus.getEvents();
+    }
 }

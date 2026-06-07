@@ -48,6 +48,8 @@ import com.hololo.app.dnschanger.R;
 import com.hololo.app.dnschanger.about.AboutActivity;
 import com.hololo.app.dnschanger.model.DNSModel;
 import com.hololo.app.dnschanger.model.DNSModelJSON;
+import com.hololo.app.dnschanger.utils.event.StatsUpdateEvent;
+import com.hololo.app.dnschanger.utils.locale.LocaleHelper;
 import com.hololo.app.dnschanger.settings.SettingsActivity;
 import com.hololo.app.dnschanger.utils.locale.LocaleHelper;
 
@@ -124,6 +126,13 @@ public class MainActivity extends AppCompatActivity implements IDNSView {
     @BindView(R.id.healthText)
     TextView healthText;
 
+    @BindView(R.id.totalStatsText)
+    TextView totalStatsText;
+    @BindView(R.id.blockedStatsText)
+    TextView blockedStatsText;
+    @BindView(R.id.percentStatsText)
+    TextView percentStatsText;
+
     private final List<DNSModel> dnsList = new ArrayList<>();
     private final List<Entry> latencyEntries = new ArrayList<>();
     private int entryCount = 0;
@@ -150,6 +159,7 @@ public class MainActivity extends AppCompatActivity implements IDNSView {
         getServiceStatus();
         parseIntent();
         detectNetworkInfo();
+        subscribeToEvents();
     }
 
     private void checkPermissions() {
@@ -258,8 +268,16 @@ public class MainActivity extends AppCompatActivity implements IDNSView {
             case R.id.logs:
                 openLogActivity();
                 break;
+            case R.id.apps:
+                openAppFilterActivity();
+                break;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void openAppFilterActivity() {
+        Intent intent = new Intent(this, AppFilterActivity.class);
+        startActivity(intent);
     }
 
     private void openLogActivity() {
@@ -379,6 +397,22 @@ public class MainActivity extends AppCompatActivity implements IDNSView {
 
     private void makeSnackbar(String message) {
         Snackbar.make(activityMain, message, Snackbar.LENGTH_LONG).show();
+    }
+
+    private void subscribeToEvents() {
+        presenter.getEvents().subscribe(o -> {
+            if (o instanceof StatsUpdateEvent) {
+                StatsUpdateEvent stats = (StatsUpdateEvent) o;
+                runOnUiThread(() -> updateStatsUI(stats));
+            }
+        });
+    }
+
+    private void updateStatsUI(StatsUpdateEvent stats) {
+        totalStatsText.setText(String.valueOf(stats.total));
+        blockedStatsText.setText(String.valueOf(stats.blocked));
+        double percent = stats.total > 0 ? (stats.blocked * 100.0 / stats.total) : 0;
+        percentStatsText.setText(String.format(java.util.Locale.ENGLISH, "%.1f%%", percent));
     }
 
     private void initViews() {

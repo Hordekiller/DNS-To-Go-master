@@ -71,5 +71,8 @@
     <string name="ping_format" translatable="false">%1$d ms</string>
     <string name="logs" translatable="false">Logs</string>
     <string name="clear_logs" translatable="false">Clear Logs</string>
+    <string name="select_apps" translatable="false">Select Apps</string>
+    <string name="per_app_routing" translatable="false">Per-app Routing</string>
+    <string name="apps_updated" translatable="false">App list updated. VPN will restart if active.</string>
     <string name="copyright">© 2026 Dns To Go. All rights reserved.</string>
 </resources>
