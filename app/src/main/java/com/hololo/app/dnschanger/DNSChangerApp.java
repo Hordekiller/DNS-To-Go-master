@@ -34,8 +34,29 @@ public class DNSChangerApp extends Application {
 
         if (BuildConfig.DEBUG) {
             Timber.plant(new Timber.DebugTree());
-        } else {
-            //TODO: Add your release log tree
         }
+        
+        // Plant a tree that saves logs to LogManager
+        Timber.plant(new Timber.Tree() {
+            @Override
+            protected void log(int priority, String tag, String message, Throwable t) {
+                String level = "INFO";
+                switch (priority) {
+                    case android.util.Log.VERBOSE: level = "VERBOSE"; break;
+                    case android.util.Log.DEBUG: level = "DEBUG"; break;
+                    case android.util.Log.INFO: level = "INFO"; break;
+                    case android.util.Log.WARN: level = "WARN"; break;
+                    case android.util.Log.ERROR: level = "ERROR"; break;
+                    case android.util.Log.ASSERT: level = "ASSERT"; break;
+                }
+                
+                String logMessage = level + "/" + (tag != null ? tag : "App") + ": " + message;
+                if (t != null) {
+                    logMessage += "\n" + android.util.Log.getStackTraceString(t);
+                }
+                
+                com.hololo.app.dnschanger.utils.LogManager.addLog(getApplicationContext(), logMessage);
+            }
+        });
     }
 }

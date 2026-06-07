@@ -249,6 +249,23 @@
                         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        android:hint="@string/dns_name"
+                        app:startIconDrawable="@drawable/ic_speed"
+                        app:startIconTint="@color/colorAccent">
+                        <com.google.android.material.textfield.TextInputEditText
+                            android:id="@+id/dnsNameEdit"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:inputType="text"
+                            android:textColor="@color/colorWhite" />
+                    </com.google.android.material.textfield.TextInputLayout>
+
+                    <Space android:layout_width="match_parent" android:layout_height="16dp" />
+
+                    <com.google.android.material.textfield.TextInputLayout
+                        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
                         android:hint="@string/secondary_dns"
                         app:startIconDrawable="@drawable/ic_vpn_key_black_24dp"
                         app:startIconTint="@color/colorAccent">

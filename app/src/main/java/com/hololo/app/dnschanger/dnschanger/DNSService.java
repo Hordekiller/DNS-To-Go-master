@@ -8,12 +8,15 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.net.TrafficStats;
 import android.net.VpnService;
 import android.os.Build;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.ParcelFileDescriptor;
-import android.preference.PreferenceManager;
 
 import androidx.core.app.NotificationCompat;
+import androidx.preference.PreferenceManager;
 
 import com.google.gson.Gson;
 import com.hololo.app.dnschanger.DNSChangerApp;
@@ -26,8 +29,8 @@ import com.hololo.app.dnschanger.utils.event.StartEvent;
 import com.hololo.app.dnschanger.utils.event.StopEvent;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.channels.DatagramChannel;
+import java.util.Locale;
 
 import javax.inject.Inject;
 
@@ -46,24 +49,40 @@ public class DNSService extends VpnService {
     @Inject
     Gson gson;
 
-    private VpnService.Builder builder = new VpnService.Builder();
+    private final VpnService.Builder builder = new VpnService.Builder();
     private ParcelFileDescriptor fileDescriptor;
     private Thread mThread;
-    private boolean shouldRun = true;
+    private volatile boolean shouldRun = true;
     private DatagramChannel tunnel;
     private DNSModel dnsModel;
     private SharedPreferences preferences;
+
+    private long startRxBytes = 0;
+    private long startTxBytes = 0;
+    private final Handler updateHandler = new Handler(Looper.getMainLooper());
+    private final Runnable updateRunnable = new Runnable() {
+        @Override
+        public void run() {
+            if (shouldRun) {
+                showNotification();
+                updateHandler.postDelayed(this, 1000);
+            }
+        }
+    };
 
     private Disposable subscriber;
 
     private void stopThisService() {
         this.shouldRun = false;
+        updateHandler.removeCallbacks(updateRunnable);
         stopSelf();
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+        this.shouldRun = false;
+        updateHandler.removeCallbacks(updateRunnable);
         if (preferences != null) {
             preferences.edit().putBoolean("isStarted", false).apply();
             preferences.edit().remove("dnsModel").apply();
@@ -84,14 +103,11 @@ public class DNSService extends VpnService {
     }
 
     private void subscribe() {
-        subscriber = rxBus.getEvents().subscribe(new Consumer<Object>() {
-            @Override
-            public void accept(Object o) throws Exception {
-                if (o instanceof StopEvent) {
-                    stopThisService();
-                } else if (o instanceof GetServiceInfo) {
-                    rxBus.sendEvent(new ServiceInfo(dnsModel));
-                }
+        subscriber = rxBus.getEvents().subscribe(o -> {
+            if (o instanceof StopEvent) {
+                stopThisService();
+            } else if (o instanceof GetServiceInfo) {
+                rxBus.sendEvent(new ServiceInfo(dnsModel));
             }
         });
     }
@@ -103,12 +119,21 @@ public class DNSService extends VpnService {
             manager.createNotificationChannel(channel);
         }
 
+        long currentRxBytes = TrafficStats.getUidRxBytes(android.os.Process.myUid());
+        long currentTxBytes = TrafficStats.getUidTxBytes(android.os.Process.myUid());
+
+        String downUsage = formatBytes(currentRxBytes - startRxBytes);
+        String upUsage = formatBytes(currentTxBytes - startTxBytes);
+
+        String contentText = (dnsModel != null ? getString(R.string.connected_to, dnsModel.getName()) : getString(R.string.dns_turbo_active))
+                + " | ↓ " + downUsage + " ↑ " + upUsage;
+
         Intent intent = new Intent(this, MainActivity.class);
         PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
 
         Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle(getString(R.string.app_name))
-                .setContentText(dnsModel != null ? getString(R.string.connected_to, dnsModel.getName()) : getString(R.string.dns_turbo_active))
+                .setContentText(contentText)
                 .setSmallIcon(R.drawable.dns_changer_ico_inverse)
                 .setContentIntent(pendingIntent)
                 .setOngoing(true)
@@ -121,6 +146,13 @@ public class DNSService extends VpnService {
         } else {
             startForeground(1903, notification);
         }
+    }
+
+    private String formatBytes(long bytes) {
+        if (bytes < 1024) return bytes + " B";
+        int exp = (int) (Math.log(bytes) / Math.log(1024));
+        String pre = "KMGTPE".charAt(exp - 1) + "";
+        return String.format(Locale.ENGLISH, "%.1f %sB", bytes / Math.pow(1024, exp), pre);
     }
 
     private void closeResources() {
@@ -152,6 +184,7 @@ public class DNSService extends VpnService {
 
     @Override
     public int onStartCommand(final Intent paramIntent, int p1, int p2) {
+        Timber.i("onStartCommand called");
         if (paramIntent != null) {
             dnsModel = paramIntent.getParcelableExtra(DNS_MODEL);
         }
@@ -163,45 +196,57 @@ public class DNSService extends VpnService {
             }
         }
 
+        if (preferences != null) {
+            preferences.edit().putBoolean("isStarted", true).apply();
+        }
+        rxBus.sendEvent(new StartEvent());
+
+        startRxBytes = TrafficStats.getUidRxBytes(android.os.Process.myUid());
+        startTxBytes = TrafficStats.getUidTxBytes(android.os.Process.myUid());
+        updateHandler.post(updateRunnable);
+
         showNotification();
 
-        mThread = new Thread(new Runnable() {
-            public void run() {
-                try {
-                    if (dnsModel == null) return;
+        mThread = new Thread(() -> {
+            try {
+                if (dnsModel == null) return;
 
-                    String modelJSON = gson.toJson(dnsModel);
-                    preferences.edit().putString("dnsModel", modelJSON).apply();
+                String modelJSON = gson.toJson(dnsModel);
+                preferences.edit().putString("dnsModel", modelJSON).apply();
 
-                    builder.setSession(DNSService.this.getText(R.string.app_name).toString())
-                            .addAddress("192.168.0.1", 24)
-                            .addDnsServer(dnsModel.getFirstDns());
+                builder.setSession(DNSService.this.getText(R.string.app_name).toString())
+                        .addAddress("192.168.0.1", 24)
+                        .addDnsServer(dnsModel.getFirstDns());
+                
+                Timber.i("Starting VPN with DNS: %s", dnsModel.getFirstDns());
 
-                    if (dnsModel.getSecondDns() != null && !dnsModel.getSecondDns().isEmpty()) {
-                        builder.addDnsServer(dnsModel.getSecondDns());
-                    }
-
-                    setFileDescriptor(builder.establish());
-                    
-                    if (fileDescriptor == null) {
-                        Timber.e("Failed to establish VPN");
-                        stopThisService();
-                        return;
-                    }
-
-                    while (shouldRun) {
-                        Thread.sleep(100L);
-                    }
-                } catch (Exception exception) {
-                    Timber.e(exception);
-                } finally {
-                    closeResources();
+                if (dnsModel.getSecondDns() != null && !dnsModel.getSecondDns().isEmpty()) {
+                    builder.addDnsServer(dnsModel.getSecondDns());
+                    Timber.i("Secondary DNS added: %s", dnsModel.getSecondDns());
                 }
+
+                setFileDescriptor(builder.establish());
+
+                if (fileDescriptor == null) {
+                    Timber.e("Failed to establish VPN");
+                    stopThisService();
+                    return;
+                }
+
+                while (shouldRun) {
+                    try {
+                        Thread.sleep(100L);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                    }
+                }
+            } catch (Exception exception) {
+                Timber.e(exception);
+            } finally {
+                closeResources();
             }
         }, "DNS Changer");
         mThread.start();
-        rxBus.sendEvent(new StartEvent());
-        preferences.edit().putBoolean("isStarted", true).apply();
         return Service.START_STICKY;
     }
 }

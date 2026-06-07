@@ -20,11 +20,24 @@ public class DNSModel implements Parcelable {
     private String category = "";
     @SerializedName("description")
     private String description = "";
+    @SerializedName("customName")
+    private String customName = "";
     @SerializedName("features")
     private List<String> features = new java.util.ArrayList<>();
 
-    public String getName() { return name; }
+    private long lastPing = -1;
+
+    public String getName() { 
+        if (customName != null && !customName.isEmpty()) return customName;
+        return name; 
+    }
     public void setName(String name) { this.name = name; }
+
+    public String getCustomName() { return customName; }
+    public void setCustomName(String customName) { this.customName = customName; }
+
+    public long getLastPing() { return lastPing; }
+    public void setLastPing(long lastPing) { this.lastPing = lastPing; }
 
     public String getFirstDns() { return firstDns; }
     public void setFirstDns(String firstDns) { this.firstDns = firstDns; }
@@ -57,6 +70,8 @@ public class DNSModel implements Parcelable {
         dest.writeString(this.ipv6);
         dest.writeString(this.category);
         dest.writeString(this.description);
+        dest.writeString(this.customName);
+        dest.writeLong(this.lastPing);
         dest.writeStringList(this.features);
     }
 
@@ -67,6 +82,8 @@ public class DNSModel implements Parcelable {
         this.ipv6 = in.readString();
         this.category = in.readString();
         this.description = in.readString();
+        this.customName = in.readString();
+        this.lastPing = in.readLong();
         this.features = in.createStringArrayList();
     }
 

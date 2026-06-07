@@ -30,6 +30,7 @@
     <string name="configuration">پیکربندی</string>
     <string name="save">ذخیره</string>
     <string name="primary_dns">دی‌ان‌اس اصلی</string>
+    <string name="dns_name">نام دی‌ان‌اس (اختیاری)</string>
     <string name="secondary_dns">دی‌ان‌اس کمکی</string>
     <string name="isp">ارائه‌دهنده</string>
     <string name="network">شبکه</string>
@@ -55,5 +56,7 @@
     <string name="contact_us">تماس با ما</string>
     <string name="website">وب‌سایت</string>
     <string name="visit_website">مشاهده سایت ما</string>
+    <string name="test">تست</string>
+    <string name="no_ping">-- میلی‌ثانیه</string>
     <string name="copyright">© ۲۰۲۶ دی‌ان‌اس تو گو. تمامی حقوق محفوظ است.</string>
 </resources>

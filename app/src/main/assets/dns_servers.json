@@ -64,6 +64,22 @@
       "category": "Region-Specific",
       "description": "Optimized for MCI (Hamrah Aval) network users.",
       "features": ["Stable", "ISP-Optimized"]
+    },
+    {
+      "name": "Zeus",
+      "firstDNS": "37.32.5.60",
+      "secondDNS": "37.32.5.61",
+      "category": "Bypass",
+      "description": "Powerful DNS for bypassing restrictions and high speed.",
+      "features": ["Fast", "Bypass"]
+    },
+    {
+      "name": "Bogzar",
+      "firstDNS": "185.55.226.26",
+      "secondDNS": "185.55.225.25",
+      "category": "Bypass",
+      "description": "Reliable anti-sanction and bypass DNS service.",
+      "features": ["Anti-Sanction", "Bypass"]
     }
   ]
 }

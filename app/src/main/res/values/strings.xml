@@ -32,6 +32,7 @@
     <string name="configuration">CONFIGURATION</string>
     <string name="save">SAVE</string>
     <string name="primary_dns">PRIMARY DNS</string>
+    <string name="dns_name">DNS NAME (OPTIONAL)</string>
     <string name="secondary_dns">SECONDARY DNS</string>
     <string name="isp">ISP</string>
     <string name="network">NETWORK</string>
@@ -65,5 +66,10 @@
     <string name="contact_us">Contact us</string>
     <string name="website">Website</string>
     <string name="visit_website">Visit our website</string>
+    <string name="test">TEST</string>
+    <string name="no_ping">-- ms</string>
+    <string name="ping_format" translatable="false">%1$d ms</string>
+    <string name="logs" translatable="false">Logs</string>
+    <string name="clear_logs" translatable="false">Clear Logs</string>
     <string name="copyright">© 2026 Dns To Go. All rights reserved.</string>
 </resources>

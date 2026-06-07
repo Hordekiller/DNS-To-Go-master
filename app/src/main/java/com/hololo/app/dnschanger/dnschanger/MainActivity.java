@@ -3,19 +3,15 @@ package com.hololo.app.dnschanger.dnschanger;
 import android.Manifest;
 import android.app.NotificationManager;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
-import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
-import android.net.NetworkInfo;
+import android.net.NetworkCapabilities;
 import android.net.VpnService;
 import android.os.Build;
 import android.os.Bundle;
 import android.telephony.TelephonyManager;
 import android.text.InputFilter;
-import android.text.Spanned;
-import android.util.Log;
 import android.util.Patterns;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -25,6 +21,9 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
@@ -54,8 +53,10 @@ import com.hololo.app.dnschanger.utils.locale.LocaleHelper;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 import javax.inject.Inject;
@@ -63,6 +64,7 @@ import javax.inject.Inject;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import timber.log.Timber;
 
 import static com.hololo.app.dnschanger.dnschanger.DNSPresenter.SERVICE_OPEN;
 
@@ -73,13 +75,14 @@ public class MainActivity extends AppCompatActivity implements IDNSView {
         super.attachBaseContext(LocaleHelper.onAttach(newBase));
     }
 
-    private static final int REQUEST_CONNECT = 21;
     private static final Pattern IP_PATTERN = Patterns.IP_ADDRESS;
 
     @BindView(R.id.firstDnsEdit)
     TextInputEditText firstDnsEdit;
     @BindView(R.id.secondDnsEdit)
     TextInputEditText secondDnsEdit;
+    @BindView(R.id.dnsNameEdit)
+    TextInputEditText dnsNameEdit;
     @BindView(R.id.startButton)
     MaterialButton startButton;
     @BindView(R.id.chooseButton)
@@ -121,9 +124,18 @@ public class MainActivity extends AppCompatActivity implements IDNSView {
     @BindView(R.id.healthText)
     TextView healthText;
 
-    private List<DNSModel> dnsList = new ArrayList<>();
-    private List<Entry> latencyEntries = new ArrayList<>();
+    private final List<DNSModel> dnsList = new ArrayList<>();
+    private final List<Entry> latencyEntries = new ArrayList<>();
     private int entryCount = 0;
+
+    private final ActivityResultLauncher<Intent> vpnLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == RESULT_OK) {
+                    presenter.startService(getDnsModel());
+                }
+            }
+    );
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -150,21 +162,40 @@ public class MainActivity extends AppCompatActivity implements IDNSView {
 
     private void detectNetworkInfo() {
         ConnectivityManager cm = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo info = cm.getActiveNetworkInfo();
-        if (info != null && info.isConnected()) {
-            if (info.getType() == ConnectivityManager.TYPE_WIFI) {
-                networkText.setText(R.string.wifi);
-                ispText.setText("Wireless Network");
-            } else if (info.getType() == ConnectivityManager.TYPE_MOBILE) {
-                networkText.setText(info.getSubtypeName());
-                TelephonyManager tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
-                String operatorName = tm.getNetworkOperatorName();
-                ispText.setText(operatorName.isEmpty() ? getString(R.string.mobile_data) : operatorName);
+        if (cm != null) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                android.net.Network network = cm.getActiveNetwork();
+                NetworkCapabilities capabilities = cm.getNetworkCapabilities(network);
+                if (capabilities != null) {
+                    if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                        networkText.setText(R.string.wifi);
+                        ispText.setText("Wireless Network");
+                    } else if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
+                        TelephonyManager tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+                        String operatorName = tm != null ? tm.getNetworkOperatorName() : "";
+                        networkText.setText(R.string.mobile_data);
+                        ispText.setText(operatorName.isEmpty() ? getString(R.string.mobile_data) : operatorName);
+                    }
+                    return;
+                }
+            } else {
+                android.net.NetworkInfo info = cm.getActiveNetworkInfo();
+                if (info != null && info.isConnected()) {
+                    if (info.getType() == ConnectivityManager.TYPE_WIFI) {
+                        networkText.setText(R.string.wifi);
+                        ispText.setText("Wireless Network");
+                    } else {
+                        networkText.setText(info.getSubtypeName());
+                        TelephonyManager tm = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+                        String operatorName = tm != null ? tm.getNetworkOperatorName() : "";
+                        ispText.setText(operatorName.isEmpty() ? getString(R.string.mobile_data) : operatorName);
+                    }
+                    return;
+                }
             }
-        } else {
-            networkText.setText("OFFLINE");
-            ispText.setText("---");
         }
+        networkText.setText(R.string.disconnected);
+        ispText.setText("---");
     }
 
     private void parseIntent() {
@@ -202,13 +233,17 @@ public class MainActivity extends AppCompatActivity implements IDNSView {
 
     @Override
     public void changeStatus(int serviceStatus) {
-        if (serviceStatus == SERVICE_OPEN) {
-            serviceStarted();
-            makeSnackbar(getString(R.string.service_started));
-        } else {
-            serviceStopped();
-            makeSnackbar(getString(R.string.service_stoppped));
-        }
+        runOnUiThread(() -> {
+            if (serviceStatus == SERVICE_OPEN) {
+                serviceStarted();
+                makeSnackbar(getString(R.string.service_started));
+                detectNetworkInfo();
+            } else {
+                serviceStopped();
+                makeSnackbar(getString(R.string.service_stoppped));
+                detectNetworkInfo();
+            }
+        });
     }
 
     @Override
@@ -220,8 +255,16 @@ public class MainActivity extends AppCompatActivity implements IDNSView {
             case R.id.settings:
                 openSettingsActivity();
                 break;
+            case R.id.logs:
+                openLogActivity();
+                break;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void openLogActivity() {
+        Intent intent = new Intent(this, LogActivity.class);
+        startActivity(intent);
     }
 
     private void openSettingsActivity() {
@@ -240,6 +283,7 @@ public class MainActivity extends AppCompatActivity implements IDNSView {
     }
 
     private void serviceStopped() {
+        Timber.i("VPN Service Stopped");
         startButton.setText(R.string.start);
         startButton.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.colorAccent));
         startButton.setIcon(ContextCompat.getDrawable(this, R.drawable.ic_power));
@@ -256,6 +300,7 @@ public class MainActivity extends AppCompatActivity implements IDNSView {
     }
 
     private void serviceStarted() {
+        Timber.i("VPN Service Started");
         startButton.setText(R.string.stop);
         startButton.setBackgroundTintList(ContextCompat.getColorStateList(this, R.color.colorRed));
         startButton.setIcon(ContextCompat.getDrawable(this, R.drawable.ic_power));
@@ -279,9 +324,9 @@ public class MainActivity extends AppCompatActivity implements IDNSView {
                 
                 runOnUiThread(() -> {
                     if (p < 2000) {
-                        pingText.setText(p + " " + getString(R.string.ms));
+                        pingText.setText(getString(R.string.ping_format, p));
                         updateChart(p);
-                        qpsText.setText(String.format("%.1f", 0.5 + Math.random()));
+                        qpsText.setText(String.format(java.util.Locale.ENGLISH, "%.1f", 0.5 + Math.random()));
                         if (p < 100) {
                             healthText.setText(R.string.excellent);
                             healthText.setTextColor(ContextCompat.getColor(this, R.color.neon_green));
@@ -302,7 +347,7 @@ public class MainActivity extends AppCompatActivity implements IDNSView {
                 Thread.sleep(3000);
                 updatePing();
             } catch (Exception e) {
-                Log.e("DNS", "Ping thread error", e);
+                Timber.e(e, "Ping thread error");
             }
         }).start();
     }
@@ -341,29 +386,25 @@ public class MainActivity extends AppCompatActivity implements IDNSView {
         setSupportActionBar(toolbar);
 
         InputFilter[] filters = new InputFilter[1];
-        filters[0] = new InputFilter() {
-            @Override
-            public CharSequence filter(CharSequence source, int start,
-                                       int end, Spanned dest, int dstart, int dend) {
-                if (end > start) {
-                    String destTxt = dest.toString();
-                    String resultingTxt = destTxt.substring(0, dstart) +
-                            source.subSequence(start, end) +
-                            destTxt.substring(dend);
-                    if (!resultingTxt.matches("^\\d{1,3}(\\." +
-                            "(\\d{1,3}(\\.(\\d{1,3}(\\.(\\d{1,3})?)?)?)?)?)?")) {
-                        return "";
-                    } else {
-                        String[] splits = resultingTxt.split("\\.");
-                        for (int i = 0; i < splits.length; i++) {
-                            if (!splits[i].isEmpty() && Integer.valueOf(splits[i]) > 255) {
-                                return "";
-                            }
+        filters[0] = (source, start, end, dest, dstart, dend) -> {
+            if (end > start) {
+                String destTxt = dest.toString();
+                String resultingTxt = destTxt.substring(0, dstart) +
+                        source.subSequence(start, end) +
+                        destTxt.substring(dend);
+                if (!resultingTxt.matches("^\\d{1,3}(\\." +
+                        "(\\d{1,3}(\\.(\\d{1,3}(\\.(\\d{1,3})?)?)?)?)?)?")) {
+                    return "";
+                } else {
+                    String[] splits = resultingTxt.split("\\.");
+                    for (String split : splits) {
+                        if (!split.isEmpty() && Integer.parseInt(split) > 255) {
+                            return "";
                         }
                     }
                 }
-                return null;
             }
+            return null;
         };
         firstDnsEdit.setFilters(filters);
         secondDnsEdit.setFilters(filters);
@@ -386,14 +427,16 @@ public class MainActivity extends AppCompatActivity implements IDNSView {
 
     private DNSModel getDnsModel() {
         DNSModel dnsModel = new DNSModel();
-        String first = firstDnsEdit.getText().toString();
-        String second = secondDnsEdit.getText().toString();
+        String first = firstDnsEdit.getText() != null ? firstDnsEdit.getText().toString() : "";
+        String second = secondDnsEdit.getText() != null ? secondDnsEdit.getText().toString() : "";
+        String customName = dnsNameEdit.getText() != null ? dnsNameEdit.getText().toString() : "";
 
-        dnsModel.setName(getString(R.string.custom_dns));
+        dnsModel.setCustomName(customName);
+        dnsModel.setName(customName.isEmpty() ? getString(R.string.custom_dns) : customName);
 
-        if (dnsList != null) {
+        if (dnsList != null && customName.isEmpty()) {
             for (DNSModel model : dnsList) {
-                if (model.getFirstDns().equals(first) && (model.getSecondDns() == null || model.getSecondDns().equals(second))) {
+                if (Objects.equals(model.getFirstDns(), first) && (model.getSecondDns() == null || Objects.equals(model.getSecondDns(), second))) {
                     dnsModel.setName(model.getName());
                     break;
                 }
@@ -410,7 +453,7 @@ public class MainActivity extends AppCompatActivity implements IDNSView {
         boolean result = true;
         firstDnsEdit.setError(null);
 
-        if (!IP_PATTERN.matcher(firstDnsEdit.getText()).matches()) {
+        if (firstDnsEdit.getText() == null || !IP_PATTERN.matcher(firstDnsEdit.getText()).matches()) {
             firstDnsEdit.setError(getString(R.string.enter_valid_dns));
             result = false;
         }
@@ -528,13 +571,11 @@ public class MainActivity extends AppCompatActivity implements IDNSView {
 
     private void saveCustomDNS() {
         if (isValid()) {
-            DNSModel custom = new DNSModel();
-            custom.setName("User DNS " + (dnsList.size() + 1));
-            custom.setFirstDns(firstDnsEdit.getText().toString());
-            custom.setSecondDns(secondDnsEdit.getText().toString());
-            custom.setCategory("Custom");
-            dnsList.add(custom);
-            makeSnackbar("DNS Saved to List!");
+            DNSModel model = getDnsModel();
+            dnsList.add(model);
+            makeSnackbar(getString(R.string.save));
+        } else {
+            makeSnackbar(getString(R.string.enter_valid_dns));
         }
     }
 
@@ -557,39 +598,61 @@ public class MainActivity extends AppCompatActivity implements IDNSView {
     }
 
     private class DNSAdapter extends RecyclerView.Adapter<DNSAdapter.ViewHolder> {
-        private List<DNSModel> items;
-        private OnItemClickListener listener;
+        private final List<DNSModel> items;
+        private final OnItemClickListener listener;
 
         DNSAdapter(List<DNSModel> items, OnItemClickListener listener) {
             this.items = items;
             this.listener = listener;
         }
 
+        @NonNull
         @Override
-        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+        public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
             View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_dns, parent, false);
             return new ViewHolder(v);
         }
 
         @Override
-        public void onBindViewHolder(ViewHolder holder, int position) {
+        public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             DNSModel model = items.get(position);
             holder.name.setText(model.getName());
             String info = model.getFirstDns() + (model.getSecondDns() != null && !model.getSecondDns().isEmpty() ? " | " + model.getSecondDns() : "");
             if (model.getCategory() != null) info = "[" + model.getCategory() + "] " + info;
             holder.ips.setText(info);
+
+            if (model.getLastPing() > 0) {
+                holder.ping.setText(getString(R.string.ping_format, model.getLastPing()));
+                holder.ping.setTextColor(model.getLastPing() < 100 ? ContextCompat.getColor(MainActivity.this, R.color.neon_green) : ContextCompat.getColor(MainActivity.this, R.color.colorAccent));
+            } else {
+                holder.ping.setText(getString(R.string.no_ping));
+                holder.ping.setTextColor(ContextCompat.getColor(MainActivity.this, R.color.colorGray));
+            }
+
             holder.itemView.setOnClickListener(v -> listener.onItemClick(model));
+            
+            holder.testButton.setOnClickListener(v -> {
+                holder.ping.setText("...");
+                new Thread(() -> {
+                    long p = testPing(model.getFirstDns());
+                    model.setLastPing(p);
+                    runOnUiThread(() -> notifyItemChanged(position));
+                }).start();
+            });
         }
 
         @Override
         public int getItemCount() { return items.size(); }
 
-        class ViewHolder extends RecyclerView.ViewHolder {
-            TextView name, ips;
+        static class ViewHolder extends RecyclerView.ViewHolder {
+            TextView name, ips, ping;
+            View testButton;
             ViewHolder(View v) {
                 super(v);
                 name = v.findViewById(R.id.dnsName);
                 ips = v.findViewById(R.id.dnsIps);
+                ping = v.findViewById(R.id.dnsPing);
+                testButton = v.findViewById(R.id.testButton);
             }
         }
     }
@@ -603,16 +666,18 @@ public class MainActivity extends AppCompatActivity implements IDNSView {
             InputStream is = getAssets().open("dns_servers.json");
             int size = is.available();
             byte[] buffer = new byte[size];
-            is.read(buffer);
+            int read = is.read(buffer);
             is.close();
-            String json = new String(buffer, "UTF-8");
-            DNSModelJSON dnsModels = gson.fromJson(json, DNSModelJSON.class);
-            dnsList.clear();
-            if (dnsModels != null && dnsModels.getModelList() != null) {
-                dnsList.addAll(dnsModels.getModelList());
+            if (read > 0) {
+                String json = new String(buffer, StandardCharsets.UTF_8);
+                DNSModelJSON dnsModels = gson.fromJson(json, DNSModelJSON.class);
+                dnsList.clear();
+                if (dnsModels != null && dnsModels.getModelList() != null) {
+                    dnsList.addAll(dnsModels.getModelList());
+                }
             }
         } catch (IOException e) {
-            Log.e("DNS", "Error reading assets", e);
+            Timber.e(e, "Error reading assets");
         }
     }
 
@@ -622,9 +687,9 @@ public class MainActivity extends AppCompatActivity implements IDNSView {
         } else if (isValid()) {
             Intent intent = VpnService.prepare(this);
             if (intent != null) {
-                startActivityForResult(intent, REQUEST_CONNECT);
+                vpnLauncher.launch(intent);
             } else {
-                onActivityResult(REQUEST_CONNECT, RESULT_OK, null);
+                presenter.startService(getDnsModel());
             }
         } else {
             makeSnackbar(getString(R.string.enter_valid_dns));
@@ -639,5 +704,11 @@ public class MainActivity extends AppCompatActivity implements IDNSView {
     @Override
     public void onStop() {
         super.onStop();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        presenter.onDestroy();
     }
 }
