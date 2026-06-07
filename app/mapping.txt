@@ -3,8 +3,8 @@
 # min_api: 21
 # common_typos_disable
 # {"id":"com.android.tools.r8.mapping","version":"2.2"}
-# pg_map_id: 25eff3d
-# pg_map_hash: SHA-256 25eff3d1bcc5cc7a248ad7cadfe5051a0a803ca454ad3e2c1ed0712e0a6c118f
+# pg_map_id: af05d8f
+# pg_map_hash: SHA-256 af05d8f1bdf4d975791570ac9c5d873836571573f93cae21ecb899a650965afa
 android.support.v4.app.RemoteActionCompatParcelizer -> android.support.v4.app.RemoteActionCompatParcelizer:
 # {"id":"sourceFile","fileName":"RemoteActionCompatParcelizer.java"}
     1:4:void <init>():11:11 -> <init>
@@ -88697,11 +88697,11 @@ com.hololo.app.dnschanger.dnschanger.DNSComponent -> v1.g:
 com.hololo.app.dnschanger.dnschanger.DNSModule -> v1.h:
 # {"id":"sourceFile","fileName":"DNSModule.java"}
     com.hololo.app.dnschanger.dnschanger.IDNSView idnsView -> a
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lv1/x;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Lv1/w;"}
     1:6:void <init>(com.hololo.app.dnschanger.dnschanger.IDNSView):13:13 -> <init>
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lv1/x;)V"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lv1/w;)V"}
     1:1:com.hololo.app.dnschanger.dnschanger.IDNSView idnsView():0:0 -> a
-      # {"id":"com.android.tools.r8.residualsignature","signature":"()Lv1/x;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"()Lv1/w;"}
 com.hololo.app.dnschanger.dnschanger.DNSModule_IdnsViewFactory -> v1.i:
 # {"id":"sourceFile","fileName":"DNSModule_IdnsViewFactory.java"}
     com.hololo.app.dnschanger.dnschanger.DNSModule module -> a
@@ -88711,21 +88711,21 @@ com.hololo.app.dnschanger.dnschanger.DNSModule_IdnsViewFactory -> v1.i:
     1:6:com.hololo.app.dnschanger.dnschanger.DNSModule_IdnsViewFactory create(com.hololo.app.dnschanger.dnschanger.DNSModule):36:36 -> a
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Lv1/h;)Lv1/i;"}
     3:7:com.hololo.app.dnschanger.dnschanger.IDNSView get():32:32 -> b
-      # {"id":"com.android.tools.r8.residualsignature","signature":"()Lv1/x;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"()Lv1/w;"}
     1:11:com.hololo.app.dnschanger.dnschanger.IDNSView idnsView(com.hololo.app.dnschanger.dnschanger.DNSModule):40:40 -> c
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lv1/h;)Lv1/x;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lv1/h;)Lv1/w;"}
     1:5:java.lang.Object get():10:10 -> get
 com.hololo.app.dnschanger.dnschanger.DNSPresenter -> v1.k:
 # {"id":"sourceFile","fileName":"DNSPresenter.java"}
     com.hololo.app.dnschanger.dnschanger.IDNSView view -> a
-      # {"id":"com.android.tools.r8.residualsignature","signature":"Lv1/x;"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"Lv1/w;"}
     com.hololo.app.dnschanger.utils.RxBus rxBus -> b
       # {"id":"com.android.tools.r8.residualsignature","signature":"Lcom/hololo/app/dnschanger/utils/c;"}
     android.content.Context context -> c
     io.reactivex.disposables.Disposable subscriber -> d
       # {"id":"com.android.tools.r8.residualsignature","signature":"La2/a;"}
     1:9:void <init>(com.hololo.app.dnschanger.dnschanger.IDNSView,com.hololo.app.dnschanger.utils.RxBus,android.content.Context):31:31 -> <init>
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lv1/x;Lcom/hololo/app/dnschanger/utils/c;Landroid/content/Context;)V"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lv1/w;Lcom/hololo/app/dnschanger/utils/c;Landroid/content/Context;)V"}
     10:13:void <init>(com.hololo.app.dnschanger.dnschanger.IDNSView,com.hololo.app.dnschanger.utils.RxBus,android.content.Context):36:36 -> <init>
     1:1:void $r8$lambda$__2MEnr_P_ApX-mbmBQqP2mk83A(com.hololo.app.dnschanger.dnschanger.DNSPresenter,java.lang.Object):0:0 -> a
       # {"id":"com.android.tools.r8.synthesized"}
@@ -88794,159 +88794,196 @@ com.hololo.app.dnschanger.dnschanger.DNSService -> com.hololo.app.dnschanger.dns
     22:35:void <init>():85:85 -> <init>
     36:46:void <init>():95:95 -> <init>
     47:54:void <init>():96:96 -> <init>
-    1:4:void lambda$subscribe$0(java.lang.Object):243:243 -> A
-    5:8:void lambda$subscribe$0(java.lang.Object):244:244 -> A
-    9:14:void lambda$subscribe$0(java.lang.Object):245:245 -> A
-    15:25:void lambda$subscribe$0(java.lang.Object):246:246 -> A
-    1:9:void parseDNS(java.nio.ByteBuffer,int):442:442 -> B
-    10:12:void parseDNS(java.nio.ByteBuffer,int):444:444 -> B
-    13:20:void parseDNS(java.nio.ByteBuffer,int):445:445 -> B
-    21:23:void parseDNS(java.nio.ByteBuffer,int):446:446 -> B
-    24:30:void parseDNS(java.nio.ByteBuffer,int):447:447 -> B
-    31:36:void parseDNS(java.nio.ByteBuffer,int):449:449 -> B
-    37:44:void parseDNS(java.nio.ByteBuffer,int):453:453 -> B
-    45:47:void parseDNS(java.nio.ByteBuffer,int):454:454 -> B
-    48:50:void parseDNS(java.nio.ByteBuffer,int):455:455 -> B
-    51:53:void parseDNS(java.nio.ByteBuffer,int):456:456 -> B
-    54:57:void parseDNS(java.nio.ByteBuffer,int):458:458 -> B
-    58:64:void parseDNS(java.nio.ByteBuffer,int):459:459 -> B
-    65:70:void parseDNS(java.nio.ByteBuffer,int):460:460 -> B
-    71:77:void parseDNS(java.nio.ByteBuffer,int):461:461 -> B
-    78:102:void parseDNS(java.nio.ByteBuffer,int):463:463 -> B
-    103:107:void parseDNS(java.nio.ByteBuffer,int):465:465 -> B
-    108:113:void parseDNS(java.nio.ByteBuffer,int):467:467 -> B
-    114:137:void parseDNS(java.nio.ByteBuffer,int):468:468 -> B
-    138:140:void parseDNS(java.nio.ByteBuffer,int):469:469 -> B
-    141:146:void parseDNS(java.nio.ByteBuffer,int):470:470 -> B
-    147:152:void parseDNS(java.nio.ByteBuffer,int):474:474 -> B
-    153:172:void parseDNS(java.nio.ByteBuffer,int):476:476 -> B
-    173:182:void parseDNS(java.nio.ByteBuffer,int):477:477 -> B
-    183:189:void parseDNS(java.nio.ByteBuffer,int):478:478 -> B
-    190:192:void parseDNS(java.nio.ByteBuffer,int):479:479 -> B
-    193:200:void parseDNS(java.nio.ByteBuffer,int):480:480 -> B
-    201:205:void parseDNS(java.nio.ByteBuffer,int):485:485 -> B
-    206:207:void parseDNS(java.nio.ByteBuffer,int):486:486 -> B
-    208:210:void parseDNS(java.nio.ByteBuffer,int):487:487 -> B
-    211:216:void parseDNS(java.nio.ByteBuffer,int):488:488 -> B
-    217:220:void parseDNS(java.nio.ByteBuffer,int):490:490 -> B
-    1:11:java.lang.String parseDomainName(java.nio.ByteBuffer):809:809 -> C
-    12:18:java.lang.String parseDomainName(java.nio.ByteBuffer):811:811 -> C
-    19:33:java.lang.String parseDomainName(java.nio.ByteBuffer):812:812 -> C
-    34:39:java.lang.String parseDomainName(java.nio.ByteBuffer):816:816 -> C
-    40:42:java.lang.String parseDomainName(java.nio.ByteBuffer):817:817 -> C
-    43:54:java.lang.String parseDomainName(java.nio.ByteBuffer):818:818 -> C
-    55:64:java.lang.String parseDomainName(java.nio.ByteBuffer):823:823 -> C
-    65:77:java.lang.String parseDomainName(java.nio.ByteBuffer):825:825 -> C
-    78:83:java.lang.String parseDomainName(java.nio.ByteBuffer):827:827 -> C
-    84:103:java.lang.String parseDomainName(java.nio.ByteBuffer):829:829 -> C
-    104:112:java.lang.String parseDomainName(java.nio.ByteBuffer):830:830 -> C
-    113:126:java.lang.String parseDomainName(java.nio.ByteBuffer):832:832 -> C
-    1:10:void performTcpFallback(byte[],java.nio.ByteBuffer,int,java.lang.String,int):542:542 -> D
-    11:14:void performTcpFallback(byte[],java.nio.ByteBuffer,int,java.lang.String,int):557:557 -> D
-    7:13:void rebindUpstream():189:189 -> E
-    14:21:void rebindUpstream():191:191 -> E
-    22:25:void rebindUpstream():192:192 -> E
-    7:15:void registerNetworkCallback():154:154 -> F
-    16:19:void registerNetworkCallback():165:165 -> F
-    3:7:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):781:781 -> G
-    8:12:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):782:782 -> G
-    13:16:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):783:783 -> G
-    17:20:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):784:784 -> G
-    21:23:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):785:785 -> G
-    24:26:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):786:786 -> G
-    27:31:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):787:787 -> G
-    32:35:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):790:790 -> G
-    36:41:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):791:791 -> G
-    42:49:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):792:792 -> G
-    50:60:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):793:793 -> G
-    61:69:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):794:794 -> G
-    70:72:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):797:797 -> G
-    73:75:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):798:798 -> G
-    76:78:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):799:799 -> G
-    79:84:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):801:801 -> G
-    85:87:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):802:802 -> G
-    88:90:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):803:803 -> G
-    91:94:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):805:805 -> G
-    1:1:void setFileDescriptor(android.os.ParcelFileDescriptor):0:0 -> H
-    3:19:void showNotification():252:252 -> I
-    20:23:void showNotification():254:254 -> I
-    24:26:void showNotification():255:255 -> I
-    27:34:void showNotification():258:258 -> I
-    35:45:void showNotification():259:259 -> I
-    46:52:void showNotification():261:261 -> I
-    53:56:void showNotification():262:262 -> I
-    57:115:void showNotification():264:264 -> I
-    116:124:void showNotification():267:267 -> I
-    125:128:void showNotification():268:268 -> I
-    129:136:void showNotification():270:270 -> I
-    137:144:void showNotification():271:271 -> I
-    145:151:void showNotification():272:272 -> I
-    152:155:void showNotification():273:273 -> I
-    156:159:void showNotification():274:274 -> I
-    160:163:void showNotification():275:275 -> I
-    164:176:void showNotification():276:276 -> I
-    177:180:void showNotification():279:279 -> I
-    181:184:void showNotification():283:283 -> I
-    2:13:void skipDomainName(java.nio.ByteBuffer):602:602 -> J
-    14:28:void skipDomainName(java.nio.ByteBuffer):603:603 -> J
-    29:38:void skipDomainName(java.nio.ByteBuffer):606:606 -> J
-    39:45:void skipDomainName(java.nio.ByteBuffer):609:609 -> J
-    46:56:void skipDomainName(java.nio.ByteBuffer):610:610 -> J
-    8:10:void stopThisService():117:117 -> K
-    11:14:void stopThisService():118:118 -> K
-    3:18:void subscribe():242:242 -> L
-    2:16:void writeIPv4Response(byte[],java.nio.ByteBuffer):624:624 -> M
-    17:19:void writeIPv4Response(byte[],java.nio.ByteBuffer):627:627 -> M
-    20:22:void writeIPv4Response(byte[],java.nio.ByteBuffer):628:628 -> M
-    23:25:void writeIPv4Response(byte[],java.nio.ByteBuffer):629:629 -> M
-    26:35:void writeIPv4Response(byte[],java.nio.ByteBuffer):631:631 -> M
-    36:40:void writeIPv4Response(byte[],java.nio.ByteBuffer):632:632 -> M
-    41:43:void writeIPv4Response(byte[],java.nio.ByteBuffer):634:634 -> M
-    44:49:void writeIPv4Response(byte[],java.nio.ByteBuffer):635:635 -> M
-    50:52:void writeIPv4Response(byte[],java.nio.ByteBuffer):638:638 -> M
-    53:56:void writeIPv4Response(byte[],java.nio.ByteBuffer):639:639 -> M
-    57:59:void writeIPv4Response(byte[],java.nio.ByteBuffer):640:640 -> M
-    60:64:void writeIPv4Response(byte[],java.nio.ByteBuffer):641:641 -> M
-    65:69:void writeIPv4Response(byte[],java.nio.ByteBuffer):642:642 -> M
-    70:74:void writeIPv4Response(byte[],java.nio.ByteBuffer):643:643 -> M
-    75:77:void writeIPv4Response(byte[],java.nio.ByteBuffer):644:644 -> M
-    78:81:void writeIPv4Response(byte[],java.nio.ByteBuffer):645:645 -> M
-    82:84:void writeIPv4Response(byte[],java.nio.ByteBuffer):646:646 -> M
-    85:87:void writeIPv4Response(byte[],java.nio.ByteBuffer):647:647 -> M
-    88:90:void writeIPv4Response(byte[],java.nio.ByteBuffer):648:648 -> M
-    91:100:void writeIPv4Response(byte[],java.nio.ByteBuffer):651:651 -> M
-    101:104:void writeIPv4Response(byte[],java.nio.ByteBuffer):652:652 -> M
-    105:108:void writeIPv4Response(byte[],java.nio.ByteBuffer):655:655 -> M
-    109:111:void writeIPv4Response(byte[],java.nio.ByteBuffer):656:656 -> M
-    112:118:void writeIPv4Response(byte[],java.nio.ByteBuffer):657:657 -> M
-    119:121:void writeIPv4Response(byte[],java.nio.ByteBuffer):658:658 -> M
-    122:124:void writeIPv4Response(byte[],java.nio.ByteBuffer):660:660 -> M
-    125:132:void writeIPv4Response(byte[],java.nio.ByteBuffer):662:662 -> M
-    9:11:void writeIPv6Response(byte[],java.nio.ByteBuffer):668:668 -> N
-    12:14:void writeIPv6Response(byte[],java.nio.ByteBuffer):669:669 -> N
-    15:19:void writeIPv6Response(byte[],java.nio.ByteBuffer):670:670 -> N
-    20:29:void writeIPv6Response(byte[],java.nio.ByteBuffer):672:672 -> N
-    30:34:void writeIPv6Response(byte[],java.nio.ByteBuffer):673:673 -> N
-    35:37:void writeIPv6Response(byte[],java.nio.ByteBuffer):675:675 -> N
-    38:43:void writeIPv6Response(byte[],java.nio.ByteBuffer):676:676 -> N
-    44:46:void writeIPv6Response(byte[],java.nio.ByteBuffer):679:679 -> N
-    47:54:void writeIPv6Response(byte[],java.nio.ByteBuffer):680:680 -> N
-    55:59:void writeIPv6Response(byte[],java.nio.ByteBuffer):681:681 -> N
-    60:62:void writeIPv6Response(byte[],java.nio.ByteBuffer):682:682 -> N
-    63:65:void writeIPv6Response(byte[],java.nio.ByteBuffer):683:683 -> N
-    66:69:void writeIPv6Response(byte[],java.nio.ByteBuffer):684:684 -> N
-    70:73:void writeIPv6Response(byte[],java.nio.ByteBuffer):687:687 -> N
-    74:76:void writeIPv6Response(byte[],java.nio.ByteBuffer):688:688 -> N
-    77:83:void writeIPv6Response(byte[],java.nio.ByteBuffer):689:689 -> N
-    84:86:void writeIPv6Response(byte[],java.nio.ByteBuffer):690:690 -> N
-    87:104:void writeIPv6Response(byte[],java.nio.ByteBuffer):693:693 -> N
-    105:107:void writeIPv6Response(byte[],java.nio.ByteBuffer):694:694 -> N
-    108:110:void writeIPv6Response(byte[],java.nio.ByteBuffer):696:696 -> N
-    111:118:void writeIPv6Response(byte[],java.nio.ByteBuffer):697:697 -> N
-    12:16:void writeToTun(byte[]):756:756 -> O
-    17:28:void writeToTun(byte[]):757:757 -> O
-    29:31:void writeToTun(byte[]):759:759 -> O
-    32:35:void writeToTun(byte[]):762:762 -> O
+    5:12:void lambda$onStartCommand$1():412:412 -> A
+    13:18:void lambda$onStartCommand$1():358:358 -> A
+    19:36:void lambda$onStartCommand$1():359:359 -> A
+    37:52:void lambda$onStartCommand$1():361:361 -> A
+    53:59:void lambda$onStartCommand$1():362:362 -> A
+    60:67:void lambda$onStartCommand$1():363:363 -> A
+    68:73:void lambda$onStartCommand$1():364:364 -> A
+    74:79:void lambda$onStartCommand$1():365:365 -> A
+    80:88:void lambda$onStartCommand$1():366:366 -> A
+    89:98:void lambda$onStartCommand$1():368:368 -> A
+    99:109:void lambda$onStartCommand$1():370:370 -> A
+    110:131:void lambda$onStartCommand$1():372:372 -> A
+    132:144:void lambda$onStartCommand$1():373:373 -> A
+    145:162:void lambda$onStartCommand$1():374:374 -> A
+    163:177:void lambda$onStartCommand$1():377:377 -> A
+    178:180:void lambda$onStartCommand$1():380:380 -> A
+    181:183:void lambda$onStartCommand$1():381:381 -> A
+    184:187:void lambda$onStartCommand$1():412:412 -> A
+    188:197:void lambda$onStartCommand$1():386:386 -> A
+    198:207:void lambda$onStartCommand$1():387:387 -> A
+    208:218:void lambda$onStartCommand$1():389:389 -> A
+    219:233:void lambda$onStartCommand$1():390:390 -> A
+    234:241:void lambda$onStartCommand$1():393:393 -> A
+    242:251:void lambda$onStartCommand$1():397:397 -> A
+    252:254:void lambda$onStartCommand$1():399:399 -> A
+    255:257:void lambda$onStartCommand$1():400:400 -> A
+    258:260:void lambda$onStartCommand$1():401:401 -> A
+    261:275:void lambda$onStartCommand$1():402:402 -> A
+    276:279:void lambda$onStartCommand$1():405:405 -> A
+    280:285:void lambda$onStartCommand$1():408:408 -> A
+    286:291:void lambda$onStartCommand$1():412:412 -> A
+    292:313:void lambda$onStartCommand$1():389:389 -> A
+    314:318:void lambda$onStartCommand$1():410:410 -> A
+    319:321:void lambda$onStartCommand$1():412:412 -> A
+    322:322:void lambda$onStartCommand$1():413:413 -> A
+    9:17:void lambda$performTcpFallback$2(java.lang.String):572:572 -> B
+    18:21:void lambda$performTcpFallback$2(java.lang.String):578:578 -> B
+    1:4:void lambda$subscribe$0(java.lang.Object):256:256 -> C
+    5:8:void lambda$subscribe$0(java.lang.Object):257:257 -> C
+    9:14:void lambda$subscribe$0(java.lang.Object):258:258 -> C
+    15:25:void lambda$subscribe$0(java.lang.Object):259:259 -> C
+    1:9:void parseDNS(java.nio.ByteBuffer,int):455:455 -> D
+    10:12:void parseDNS(java.nio.ByteBuffer,int):457:457 -> D
+    13:20:void parseDNS(java.nio.ByteBuffer,int):458:458 -> D
+    21:23:void parseDNS(java.nio.ByteBuffer,int):459:459 -> D
+    24:30:void parseDNS(java.nio.ByteBuffer,int):460:460 -> D
+    31:36:void parseDNS(java.nio.ByteBuffer,int):462:462 -> D
+    37:44:void parseDNS(java.nio.ByteBuffer,int):466:466 -> D
+    45:47:void parseDNS(java.nio.ByteBuffer,int):467:467 -> D
+    48:50:void parseDNS(java.nio.ByteBuffer,int):468:468 -> D
+    51:53:void parseDNS(java.nio.ByteBuffer,int):469:469 -> D
+    54:57:void parseDNS(java.nio.ByteBuffer,int):471:471 -> D
+    58:64:void parseDNS(java.nio.ByteBuffer,int):472:472 -> D
+    65:70:void parseDNS(java.nio.ByteBuffer,int):473:473 -> D
+    71:77:void parseDNS(java.nio.ByteBuffer,int):474:474 -> D
+    78:102:void parseDNS(java.nio.ByteBuffer,int):476:476 -> D
+    103:107:void parseDNS(java.nio.ByteBuffer,int):478:478 -> D
+    108:113:void parseDNS(java.nio.ByteBuffer,int):480:480 -> D
+    114:137:void parseDNS(java.nio.ByteBuffer,int):481:481 -> D
+    138:140:void parseDNS(java.nio.ByteBuffer,int):482:482 -> D
+    141:146:void parseDNS(java.nio.ByteBuffer,int):483:483 -> D
+    147:152:void parseDNS(java.nio.ByteBuffer,int):487:487 -> D
+    153:172:void parseDNS(java.nio.ByteBuffer,int):489:489 -> D
+    173:182:void parseDNS(java.nio.ByteBuffer,int):490:490 -> D
+    183:189:void parseDNS(java.nio.ByteBuffer,int):491:491 -> D
+    190:192:void parseDNS(java.nio.ByteBuffer,int):492:492 -> D
+    193:200:void parseDNS(java.nio.ByteBuffer,int):493:493 -> D
+    201:205:void parseDNS(java.nio.ByteBuffer,int):498:498 -> D
+    206:207:void parseDNS(java.nio.ByteBuffer,int):499:499 -> D
+    208:210:void parseDNS(java.nio.ByteBuffer,int):500:500 -> D
+    211:216:void parseDNS(java.nio.ByteBuffer,int):501:501 -> D
+    217:220:void parseDNS(java.nio.ByteBuffer,int):503:503 -> D
+    1:11:java.lang.String parseDomainName(java.nio.ByteBuffer):832:832 -> E
+    12:18:java.lang.String parseDomainName(java.nio.ByteBuffer):834:834 -> E
+    19:33:java.lang.String parseDomainName(java.nio.ByteBuffer):835:835 -> E
+    34:39:java.lang.String parseDomainName(java.nio.ByteBuffer):839:839 -> E
+    40:42:java.lang.String parseDomainName(java.nio.ByteBuffer):840:840 -> E
+    43:54:java.lang.String parseDomainName(java.nio.ByteBuffer):841:841 -> E
+    55:64:java.lang.String parseDomainName(java.nio.ByteBuffer):846:846 -> E
+    65:77:java.lang.String parseDomainName(java.nio.ByteBuffer):848:848 -> E
+    78:83:java.lang.String parseDomainName(java.nio.ByteBuffer):850:850 -> E
+    84:103:java.lang.String parseDomainName(java.nio.ByteBuffer):852:852 -> E
+    104:112:java.lang.String parseDomainName(java.nio.ByteBuffer):853:853 -> E
+    113:126:java.lang.String parseDomainName(java.nio.ByteBuffer):855:855 -> E
+    1:10:void performTcpFallback(byte[],java.nio.ByteBuffer,int,java.lang.String,int):565:565 -> F
+    11:14:void performTcpFallback(byte[],java.nio.ByteBuffer,int,java.lang.String,int):580:580 -> F
+    7:13:void rebindUpstream():189:189 -> G
+    14:21:void rebindUpstream():191:191 -> G
+    22:25:void rebindUpstream():192:192 -> G
+    7:15:void registerNetworkCallback():154:154 -> H
+    16:19:void registerNetworkCallback():165:165 -> H
+    3:7:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):804:804 -> I
+    8:12:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):805:805 -> I
+    13:16:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):806:806 -> I
+    17:20:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):807:807 -> I
+    21:23:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):808:808 -> I
+    24:26:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):809:809 -> I
+    27:31:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):810:810 -> I
+    32:35:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):813:813 -> I
+    36:41:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):814:814 -> I
+    42:49:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):815:815 -> I
+    50:60:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):816:816 -> I
+    61:69:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):817:817 -> I
+    70:72:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):820:820 -> I
+    73:75:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):821:821 -> I
+    76:78:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):822:822 -> I
+    79:84:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):824:824 -> I
+    85:87:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):825:825 -> I
+    88:90:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):826:826 -> I
+    91:94:void sendNxDomainResponse(int,java.lang.String,java.nio.ByteBuffer):828:828 -> I
+    1:1:void setFileDescriptor(android.os.ParcelFileDescriptor):0:0 -> J
+    3:19:void showNotification():265:265 -> K
+    20:23:void showNotification():267:267 -> K
+    24:26:void showNotification():268:268 -> K
+    27:34:void showNotification():271:271 -> K
+    35:45:void showNotification():272:272 -> K
+    46:52:void showNotification():274:274 -> K
+    53:56:void showNotification():275:275 -> K
+    57:115:void showNotification():277:277 -> K
+    116:124:void showNotification():280:280 -> K
+    125:128:void showNotification():281:281 -> K
+    129:136:void showNotification():283:283 -> K
+    137:144:void showNotification():284:284 -> K
+    145:151:void showNotification():285:285 -> K
+    152:155:void showNotification():286:286 -> K
+    156:159:void showNotification():287:287 -> K
+    160:163:void showNotification():288:288 -> K
+    164:176:void showNotification():289:289 -> K
+    177:180:void showNotification():292:292 -> K
+    181:184:void showNotification():296:296 -> K
+    2:13:void skipDomainName(java.nio.ByteBuffer):625:625 -> L
+    14:28:void skipDomainName(java.nio.ByteBuffer):626:626 -> L
+    29:38:void skipDomainName(java.nio.ByteBuffer):629:629 -> L
+    39:45:void skipDomainName(java.nio.ByteBuffer):632:632 -> L
+    46:56:void skipDomainName(java.nio.ByteBuffer):633:633 -> L
+    8:10:void stopThisService():117:117 -> M
+    11:14:void stopThisService():118:118 -> M
+    3:18:void subscribe():255:255 -> N
+    2:16:void writeIPv4Response(byte[],java.nio.ByteBuffer):647:647 -> O
+    17:19:void writeIPv4Response(byte[],java.nio.ByteBuffer):650:650 -> O
+    20:22:void writeIPv4Response(byte[],java.nio.ByteBuffer):651:651 -> O
+    23:25:void writeIPv4Response(byte[],java.nio.ByteBuffer):652:652 -> O
+    26:35:void writeIPv4Response(byte[],java.nio.ByteBuffer):654:654 -> O
+    36:40:void writeIPv4Response(byte[],java.nio.ByteBuffer):655:655 -> O
+    41:43:void writeIPv4Response(byte[],java.nio.ByteBuffer):657:657 -> O
+    44:49:void writeIPv4Response(byte[],java.nio.ByteBuffer):658:658 -> O
+    50:52:void writeIPv4Response(byte[],java.nio.ByteBuffer):661:661 -> O
+    53:56:void writeIPv4Response(byte[],java.nio.ByteBuffer):662:662 -> O
+    57:59:void writeIPv4Response(byte[],java.nio.ByteBuffer):663:663 -> O
+    60:64:void writeIPv4Response(byte[],java.nio.ByteBuffer):664:664 -> O
+    65:69:void writeIPv4Response(byte[],java.nio.ByteBuffer):665:665 -> O
+    70:74:void writeIPv4Response(byte[],java.nio.ByteBuffer):666:666 -> O
+    75:77:void writeIPv4Response(byte[],java.nio.ByteBuffer):667:667 -> O
+    78:81:void writeIPv4Response(byte[],java.nio.ByteBuffer):668:668 -> O
+    82:84:void writeIPv4Response(byte[],java.nio.ByteBuffer):669:669 -> O
+    85:87:void writeIPv4Response(byte[],java.nio.ByteBuffer):670:670 -> O
+    88:90:void writeIPv4Response(byte[],java.nio.ByteBuffer):671:671 -> O
+    91:100:void writeIPv4Response(byte[],java.nio.ByteBuffer):674:674 -> O
+    101:104:void writeIPv4Response(byte[],java.nio.ByteBuffer):675:675 -> O
+    105:108:void writeIPv4Response(byte[],java.nio.ByteBuffer):678:678 -> O
+    109:111:void writeIPv4Response(byte[],java.nio.ByteBuffer):679:679 -> O
+    112:118:void writeIPv4Response(byte[],java.nio.ByteBuffer):680:680 -> O
+    119:121:void writeIPv4Response(byte[],java.nio.ByteBuffer):681:681 -> O
+    122:124:void writeIPv4Response(byte[],java.nio.ByteBuffer):683:683 -> O
+    125:132:void writeIPv4Response(byte[],java.nio.ByteBuffer):685:685 -> O
+    9:11:void writeIPv6Response(byte[],java.nio.ByteBuffer):691:691 -> P
+    12:14:void writeIPv6Response(byte[],java.nio.ByteBuffer):692:692 -> P
+    15:19:void writeIPv6Response(byte[],java.nio.ByteBuffer):693:693 -> P
+    20:29:void writeIPv6Response(byte[],java.nio.ByteBuffer):695:695 -> P
+    30:34:void writeIPv6Response(byte[],java.nio.ByteBuffer):696:696 -> P
+    35:37:void writeIPv6Response(byte[],java.nio.ByteBuffer):698:698 -> P
+    38:43:void writeIPv6Response(byte[],java.nio.ByteBuffer):699:699 -> P
+    44:46:void writeIPv6Response(byte[],java.nio.ByteBuffer):702:702 -> P
+    47:54:void writeIPv6Response(byte[],java.nio.ByteBuffer):703:703 -> P
+    55:59:void writeIPv6Response(byte[],java.nio.ByteBuffer):704:704 -> P
+    60:62:void writeIPv6Response(byte[],java.nio.ByteBuffer):705:705 -> P
+    63:65:void writeIPv6Response(byte[],java.nio.ByteBuffer):706:706 -> P
+    66:69:void writeIPv6Response(byte[],java.nio.ByteBuffer):707:707 -> P
+    70:73:void writeIPv6Response(byte[],java.nio.ByteBuffer):710:710 -> P
+    74:76:void writeIPv6Response(byte[],java.nio.ByteBuffer):711:711 -> P
+    77:83:void writeIPv6Response(byte[],java.nio.ByteBuffer):712:712 -> P
+    84:86:void writeIPv6Response(byte[],java.nio.ByteBuffer):713:713 -> P
+    87:104:void writeIPv6Response(byte[],java.nio.ByteBuffer):716:716 -> P
+    105:107:void writeIPv6Response(byte[],java.nio.ByteBuffer):717:717 -> P
+    108:110:void writeIPv6Response(byte[],java.nio.ByteBuffer):719:719 -> P
+    111:118:void writeIPv6Response(byte[],java.nio.ByteBuffer):720:720 -> P
+    12:16:void writeToTun(byte[]):779:779 -> Q
+    17:28:void writeToTun(byte[]):780:780 -> Q
+    29:31:void writeToTun(byte[]):782:782 -> Q
+    32:35:void writeToTun(byte[]):785:785 -> Q
     1:1:void $r8$lambda$NNRuL-hllBpRVvpfHgNP-KyE1Bk(com.hololo.app.dnschanger.dnschanger.DNSService):0:0 -> a
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:void $r8$lambda$V_8CTQRCmGaoSv8Pn-FkDK0Vtu8(java.lang.String):0:0 -> b
@@ -88962,34 +88999,31 @@ com.hololo.app.dnschanger.dnschanger.DNSService -> com.hololo.app.dnschanger.dns
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:long -$$Nest$mextractMinTTL(com.hololo.app.dnschanger.dnschanger.DNSService,byte[]):0:0 -> g
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void -$$Nest$mhandleDoHResponse(com.hololo.app.dnschanger.dnschanger.DNSService,byte[],java.nio.ByteBuffer,int):0:0 -> h
+    1:1:void -$$Nest$mforwardToDoHWithRetry(com.hololo.app.dnschanger.dnschanger.DNSService,byte[],java.nio.ByteBuffer,int,java.lang.String,int,int):0:0 -> h
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void -$$Nest$mhandleNetworkChange(com.hololo.app.dnschanger.dnschanger.DNSService,android.net.Network):0:0 -> i
+    1:1:void -$$Nest$mhandleDoHResponse(com.hololo.app.dnschanger.dnschanger.DNSService,byte[],java.nio.ByteBuffer,int):0:0 -> i
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void -$$Nest$mperformTcpFallback(com.hololo.app.dnschanger.dnschanger.DNSService,byte[],java.nio.ByteBuffer,int,java.lang.String,int):0:0 -> j
+    1:1:void -$$Nest$mhandleNetworkChange(com.hololo.app.dnschanger.dnschanger.DNSService,android.net.Network):0:0 -> j
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void -$$Nest$mshowNotification(com.hololo.app.dnschanger.dnschanger.DNSService):0:0 -> k
+    1:1:void -$$Nest$mperformTcpFallback(com.hololo.app.dnschanger.dnschanger.DNSService,byte[],java.nio.ByteBuffer,int,java.lang.String,int):0:0 -> k
       # {"id":"com.android.tools.r8.synthesized"}
-    1:4:void applyAppFilter(android.net.VpnService$Builder):765:765 -> l
-    5:17:void applyAppFilter(android.net.VpnService$Builder):766:766 -> l
-    18:23:void applyAppFilter(android.net.VpnService$Builder):767:767 -> l
-    24:41:void applyAppFilter(android.net.VpnService$Builder):768:768 -> l
-    42:51:void applyAppFilter(android.net.VpnService$Builder):770:770 -> l
-    52:57:void applyAppFilter(android.net.VpnService$Builder):772:772 -> l
-    58:73:void applyAppFilter(android.net.VpnService$Builder):775:775 -> l
-    9:39:short calculateChecksum(byte[],int):705:705 -> m
-    40:58:short calculateChecksum(byte[],int):711:711 -> m
-    8:21:int calculateIPv6UdpChecksum(byte[],byte[],int,byte[],int,byte[]):724:724 -> n
-    22:46:int calculateIPv6UdpChecksum(byte[],byte[],int,byte[],int,byte[]):725:725 -> n
-    47:62:int calculateIPv6UdpChecksum(byte[],byte[],int,byte[],int,byte[]):732:732 -> n
-    63:65:int calculateIPv6UdpChecksum(byte[],byte[],int,byte[],int,byte[]):737:737 -> n
-    66:86:int calculateIPv6UdpChecksum(byte[],byte[],int,byte[],int,byte[]):739:739 -> n
-    87:107:int calculateIPv6UdpChecksum(byte[],byte[],int,byte[],int,byte[]):744:744 -> n
-    9:11:void closeResources():298:298 -> o
-    12:16:void closeResources():299:299 -> o
-    17:23:void closeResources():301:301 -> o
-    24:30:void closeResources():306:306 -> o
-    31:34:void closeResources():309:309 -> o
+    1:1:void -$$Nest$mshowNotification(com.hololo.app.dnschanger.dnschanger.DNSService):0:0 -> l
+      # {"id":"com.android.tools.r8.synthesized"}
+    1:4:void applyAppFilter(android.net.VpnService$Builder):788:788 -> m
+    5:17:void applyAppFilter(android.net.VpnService$Builder):789:789 -> m
+    18:23:void applyAppFilter(android.net.VpnService$Builder):790:790 -> m
+    24:41:void applyAppFilter(android.net.VpnService$Builder):791:791 -> m
+    42:51:void applyAppFilter(android.net.VpnService$Builder):793:793 -> m
+    52:57:void applyAppFilter(android.net.VpnService$Builder):795:795 -> m
+    58:73:void applyAppFilter(android.net.VpnService$Builder):798:798 -> m
+    9:39:short calculateChecksum(byte[],int):728:728 -> n
+    40:58:short calculateChecksum(byte[],int):734:734 -> n
+    8:21:int calculateIPv6UdpChecksum(byte[],byte[],int,byte[],int,byte[]):747:747 -> o
+    22:46:int calculateIPv6UdpChecksum(byte[],byte[],int,byte[],int,byte[]):748:748 -> o
+    47:62:int calculateIPv6UdpChecksum(byte[],byte[],int,byte[],int,byte[]):755:755 -> o
+    63:65:int calculateIPv6UdpChecksum(byte[],byte[],int,byte[],int,byte[]):760:760 -> o
+    66:86:int calculateIPv6UdpChecksum(byte[],byte[],int,byte[],int,byte[]):762:762 -> o
+    87:107:int calculateIPv6UdpChecksum(byte[],byte[],int,byte[],int,byte[]):767:767 -> o
     1:3:void onCreate():142:142 -> onCreate
     4:9:void onCreate():143:143 -> onCreate
     10:16:void onCreate():144:144 -> onCreate
@@ -89009,115 +89043,86 @@ com.hololo.app.dnschanger.dnschanger.DNSService -> com.hololo.app.dnschanger.dns
     1:8:void onRevoke():110:110 -> onRevoke
     9:11:void onRevoke():111:111 -> onRevoke
     12:15:void onRevoke():112:112 -> onRevoke
-    6:12:int onStartCommand(android.content.Intent,int,int):320:320 -> onStartCommand
-    13:32:int onStartCommand(android.content.Intent,int,int):322:322 -> onStartCommand
-    33:36:int onStartCommand(android.content.Intent,int,int):326:326 -> onStartCommand
-    37:46:int onStartCommand(android.content.Intent,int,int):327:327 -> onStartCommand
-    47:59:int onStartCommand(android.content.Intent,int,int):328:328 -> onStartCommand
-    60:74:int onStartCommand(android.content.Intent,int,int):333:333 -> onStartCommand
-    75:86:int onStartCommand(android.content.Intent,int,int):335:335 -> onStartCommand
-    87:89:int onStartCommand(android.content.Intent,int,int):337:337 -> onStartCommand
-    90:92:int onStartCommand(android.content.Intent,int,int):339:339 -> onStartCommand
-    93:106:int onStartCommand(android.content.Intent,int,int):341:341 -> onStartCommand
-    107:110:int onStartCommand(android.content.Intent,int,int):402:402 -> onStartCommand
-    4:7:long extractMinTTL(byte[]):562:562 -> p
-    8:17:long extractMinTTL(byte[]):563:563 -> p
-    18:20:long extractMinTTL(byte[]):564:564 -> p
-    21:28:long extractMinTTL(byte[]):565:565 -> p
-    29:33:long extractMinTTL(byte[]):566:566 -> p
-    34:40:long extractMinTTL(byte[]):567:567 -> p
-    41:46:long extractMinTTL(byte[]):568:568 -> p
-    47:53:long extractMinTTL(byte[]):572:572 -> p
-    54:56:long extractMinTTL(byte[]):573:573 -> p
-    57:63:long extractMinTTL(byte[]):574:574 -> p
-    64:66:long extractMinTTL(byte[]):575:575 -> p
-    67:79:long extractMinTTL(byte[]):576:576 -> p
-    80:86:long extractMinTTL(byte[]):582:582 -> p
-    87:89:long extractMinTTL(byte[]):583:583 -> p
-    90:98:long extractMinTTL(byte[]):584:584 -> p
-    99:101:long extractMinTTL(byte[]):585:585 -> p
-    102:104:long extractMinTTL(byte[]):586:586 -> p
-    105:122:long extractMinTTL(byte[]):587:587 -> p
-    123:127:long extractMinTTL(byte[]):589:589 -> p
-    128:134:long extractMinTTL(byte[]):590:590 -> p
-    135:147:long extractMinTTL(byte[]):591:591 -> p
-    148:156:long extractMinTTL(byte[]):593:593 -> p
-    157:160:long extractMinTTL(byte[]):595:595 -> p
-    7:25:java.lang.String formatBytes(long):288:288 -> q
-    26:37:java.lang.String formatBytes(long):289:289 -> q
-    38:62:java.lang.String formatBytes(long):290:290 -> q
-    63:90:java.lang.String formatBytes(long):291:291 -> q
-    7:28:void forwardToDoH(byte[],java.nio.ByteBuffer,int,java.lang.String,int):496:496 -> r
-    29:37:void forwardToDoH(byte[],java.nio.ByteBuffer,int,java.lang.String,int):497:497 -> r
-    38:45:void forwardToDoH(byte[],java.nio.ByteBuffer,int,java.lang.String,int):500:500 -> r
-    46:50:void forwardToDoH(byte[],java.nio.ByteBuffer,int,java.lang.String,int):501:501 -> r
-    51:54:void forwardToDoH(byte[],java.nio.ByteBuffer,int,java.lang.String,int):502:502 -> r
-    55:60:void forwardToDoH(byte[],java.nio.ByteBuffer,int,java.lang.String,int):503:503 -> r
-    61:64:void forwardToDoH(byte[],java.nio.ByteBuffer,int,java.lang.String,int):504:504 -> r
-    65:70:void forwardToDoH(byte[],java.nio.ByteBuffer,int,java.lang.String,int):505:505 -> r
-    71:90:void forwardToDoH(byte[],java.nio.ByteBuffer,int,java.lang.String,int):507:507 -> r
-    2:11:void handleDoHResponse(byte[],java.nio.ByteBuffer,int):615:615 -> s
-    12:18:void handleDoHResponse(byte[],java.nio.ByteBuffer,int):617:617 -> s
-    19:22:void handleDoHResponse(byte[],java.nio.ByteBuffer,int):619:619 -> s
-    2:16:void handleIPv4(java.nio.ByteBuffer,int):418:418 -> t
-    17:26:void handleIPv4(java.nio.ByteBuffer,int):421:421 -> t
-    27:38:void handleIPv4(java.nio.ByteBuffer,int):423:423 -> t
-    39:42:void handleIPv4(java.nio.ByteBuffer,int):425:425 -> t
-    7:16:void handleIPv6(java.nio.ByteBuffer,int):432:432 -> u
-    17:28:void handleIPv6(java.nio.ByteBuffer,int):434:434 -> u
-    29:32:void handleIPv6(java.nio.ByteBuffer,int):436:436 -> u
-    1:25:void handleNetworkChange(android.net.Network):170:170 -> v
-    26:40:void handleNetworkChange(android.net.Network):174:174 -> v
-    41:45:void handleNetworkChange(android.net.Network):178:178 -> v
-    46:48:void handleNetworkChange(android.net.Network):180:180 -> v
-    49:52:void handleNetworkChange(android.net.Network):184:184 -> v
-    7:16:void handlePacket(java.nio.ByteBuffer,int):409:409 -> w
-    17:27:void handlePacket(java.nio.ByteBuffer,int):411:411 -> w
-    28:31:void handlePacket(java.nio.ByteBuffer,int):413:413 -> w
-    2:12:void initOkHttp():196:196 -> x
-    13:20:void initOkHttp():197:197 -> x
-    21:24:void initOkHttp():198:198 -> x
-    25:28:void initOkHttp():199:199 -> x
-    29:32:void initOkHttp():200:200 -> x
-    33:38:void initOkHttp():201:201 -> x
-    39:43:void initOkHttp():202:202 -> x
-    5:12:void lambda$onStartCommand$1():399:399 -> y
-    13:18:void lambda$onStartCommand$1():345:345 -> y
-    19:36:void lambda$onStartCommand$1():346:346 -> y
-    37:52:void lambda$onStartCommand$1():348:348 -> y
-    53:59:void lambda$onStartCommand$1():349:349 -> y
-    60:67:void lambda$onStartCommand$1():350:350 -> y
-    68:73:void lambda$onStartCommand$1():351:351 -> y
-    74:79:void lambda$onStartCommand$1():352:352 -> y
-    80:88:void lambda$onStartCommand$1():353:353 -> y
-    89:98:void lambda$onStartCommand$1():355:355 -> y
-    99:109:void lambda$onStartCommand$1():357:357 -> y
-    110:131:void lambda$onStartCommand$1():359:359 -> y
-    132:144:void lambda$onStartCommand$1():360:360 -> y
-    145:162:void lambda$onStartCommand$1():361:361 -> y
-    163:177:void lambda$onStartCommand$1():364:364 -> y
-    178:180:void lambda$onStartCommand$1():367:367 -> y
-    181:183:void lambda$onStartCommand$1():368:368 -> y
-    184:187:void lambda$onStartCommand$1():399:399 -> y
-    188:197:void lambda$onStartCommand$1():373:373 -> y
-    198:207:void lambda$onStartCommand$1():374:374 -> y
-    208:218:void lambda$onStartCommand$1():376:376 -> y
-    219:233:void lambda$onStartCommand$1():377:377 -> y
-    234:241:void lambda$onStartCommand$1():380:380 -> y
-    242:251:void lambda$onStartCommand$1():384:384 -> y
-    252:254:void lambda$onStartCommand$1():386:386 -> y
-    255:257:void lambda$onStartCommand$1():387:387 -> y
-    258:260:void lambda$onStartCommand$1():388:388 -> y
-    261:275:void lambda$onStartCommand$1():389:389 -> y
-    276:279:void lambda$onStartCommand$1():392:392 -> y
-    280:285:void lambda$onStartCommand$1():395:395 -> y
-    286:291:void lambda$onStartCommand$1():399:399 -> y
-    292:313:void lambda$onStartCommand$1():376:376 -> y
-    314:318:void lambda$onStartCommand$1():397:397 -> y
-    319:321:void lambda$onStartCommand$1():399:399 -> y
-    322:322:void lambda$onStartCommand$1():400:400 -> y
-    9:17:void lambda$performTcpFallback$2(java.lang.String):549:549 -> z
-    18:21:void lambda$performTcpFallback$2(java.lang.String):555:555 -> z
+    6:12:int onStartCommand(android.content.Intent,int,int):333:333 -> onStartCommand
+    13:32:int onStartCommand(android.content.Intent,int,int):335:335 -> onStartCommand
+    33:36:int onStartCommand(android.content.Intent,int,int):339:339 -> onStartCommand
+    37:46:int onStartCommand(android.content.Intent,int,int):340:340 -> onStartCommand
+    47:59:int onStartCommand(android.content.Intent,int,int):341:341 -> onStartCommand
+    60:74:int onStartCommand(android.content.Intent,int,int):346:346 -> onStartCommand
+    75:86:int onStartCommand(android.content.Intent,int,int):348:348 -> onStartCommand
+    87:89:int onStartCommand(android.content.Intent,int,int):350:350 -> onStartCommand
+    90:92:int onStartCommand(android.content.Intent,int,int):352:352 -> onStartCommand
+    93:106:int onStartCommand(android.content.Intent,int,int):354:354 -> onStartCommand
+    107:110:int onStartCommand(android.content.Intent,int,int):415:415 -> onStartCommand
+    9:11:void closeResources():311:311 -> p
+    12:16:void closeResources():312:312 -> p
+    17:23:void closeResources():314:314 -> p
+    24:30:void closeResources():319:319 -> p
+    31:34:void closeResources():322:322 -> p
+    4:7:long extractMinTTL(byte[]):585:585 -> q
+    8:17:long extractMinTTL(byte[]):586:586 -> q
+    18:20:long extractMinTTL(byte[]):587:587 -> q
+    21:28:long extractMinTTL(byte[]):588:588 -> q
+    29:33:long extractMinTTL(byte[]):589:589 -> q
+    34:40:long extractMinTTL(byte[]):590:590 -> q
+    41:46:long extractMinTTL(byte[]):591:591 -> q
+    47:53:long extractMinTTL(byte[]):595:595 -> q
+    54:56:long extractMinTTL(byte[]):596:596 -> q
+    57:63:long extractMinTTL(byte[]):597:597 -> q
+    64:66:long extractMinTTL(byte[]):598:598 -> q
+    67:79:long extractMinTTL(byte[]):599:599 -> q
+    80:86:long extractMinTTL(byte[]):605:605 -> q
+    87:89:long extractMinTTL(byte[]):606:606 -> q
+    90:98:long extractMinTTL(byte[]):607:607 -> q
+    99:101:long extractMinTTL(byte[]):608:608 -> q
+    102:104:long extractMinTTL(byte[]):609:609 -> q
+    105:122:long extractMinTTL(byte[]):610:610 -> q
+    123:127:long extractMinTTL(byte[]):612:612 -> q
+    128:134:long extractMinTTL(byte[]):613:613 -> q
+    135:147:long extractMinTTL(byte[]):614:614 -> q
+    148:156:long extractMinTTL(byte[]):616:616 -> q
+    157:160:long extractMinTTL(byte[]):618:618 -> q
+    7:25:java.lang.String formatBytes(long):301:301 -> r
+    26:37:java.lang.String formatBytes(long):302:302 -> r
+    38:62:java.lang.String formatBytes(long):303:303 -> r
+    63:90:java.lang.String formatBytes(long):304:304 -> r
+    8:11:void forwardToDoH(byte[],java.nio.ByteBuffer,int,java.lang.String,int):509:509 -> s
+    8:29:void forwardToDoHWithRetry(byte[],java.nio.ByteBuffer,int,java.lang.String,int,int):513:513 -> t
+    30:38:void forwardToDoHWithRetry(byte[],java.nio.ByteBuffer,int,java.lang.String,int,int):514:514 -> t
+    39:47:void forwardToDoHWithRetry(byte[],java.nio.ByteBuffer,int,java.lang.String,int,int):517:517 -> t
+    48:52:void forwardToDoHWithRetry(byte[],java.nio.ByteBuffer,int,java.lang.String,int,int):518:518 -> t
+    53:56:void forwardToDoHWithRetry(byte[],java.nio.ByteBuffer,int,java.lang.String,int,int):519:519 -> t
+    57:62:void forwardToDoHWithRetry(byte[],java.nio.ByteBuffer,int,java.lang.String,int,int):520:520 -> t
+    63:70:void forwardToDoHWithRetry(byte[],java.nio.ByteBuffer,int,java.lang.String,int,int):521:521 -> t
+    71:74:void forwardToDoHWithRetry(byte[],java.nio.ByteBuffer,int,java.lang.String,int,int):522:522 -> t
+    75:80:void forwardToDoHWithRetry(byte[],java.nio.ByteBuffer,int,java.lang.String,int,int):523:523 -> t
+    81:102:void forwardToDoHWithRetry(byte[],java.nio.ByteBuffer,int,java.lang.String,int,int):525:525 -> t
+    2:11:void handleDoHResponse(byte[],java.nio.ByteBuffer,int):638:638 -> u
+    12:18:void handleDoHResponse(byte[],java.nio.ByteBuffer,int):640:640 -> u
+    19:22:void handleDoHResponse(byte[],java.nio.ByteBuffer,int):642:642 -> u
+    2:16:void handleIPv4(java.nio.ByteBuffer,int):431:431 -> v
+    17:26:void handleIPv4(java.nio.ByteBuffer,int):434:434 -> v
+    27:38:void handleIPv4(java.nio.ByteBuffer,int):436:436 -> v
+    39:42:void handleIPv4(java.nio.ByteBuffer,int):438:438 -> v
+    7:16:void handleIPv6(java.nio.ByteBuffer,int):445:445 -> w
+    17:28:void handleIPv6(java.nio.ByteBuffer,int):447:447 -> w
+    29:32:void handleIPv6(java.nio.ByteBuffer,int):449:449 -> w
+    1:25:void handleNetworkChange(android.net.Network):170:170 -> x
+    26:40:void handleNetworkChange(android.net.Network):174:174 -> x
+    41:45:void handleNetworkChange(android.net.Network):178:178 -> x
+    46:48:void handleNetworkChange(android.net.Network):180:180 -> x
+    49:52:void handleNetworkChange(android.net.Network):184:184 -> x
+    7:16:void handlePacket(java.nio.ByteBuffer,int):422:422 -> y
+    17:27:void handlePacket(java.nio.ByteBuffer,int):424:424 -> y
+    28:31:void handlePacket(java.nio.ByteBuffer,int):426:426 -> y
+    2:11:void initOkHttp():196:196 -> z
+    12:19:void initOkHttp():197:197 -> z
+    20:23:void initOkHttp():198:198 -> z
+    24:27:void initOkHttp():199:199 -> z
+    28:32:void initOkHttp():200:200 -> z
+    33:36:void initOkHttp():201:201 -> z
+    37:42:void initOkHttp():202:202 -> z
+    43:47:void initOkHttp():203:203 -> z
 com.hololo.app.dnschanger.dnschanger.DNSService$$ExternalSyntheticApiModelOutline0 -> v1.l:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
@@ -89185,47 +89190,45 @@ com.hololo.app.dnschanger.dnschanger.DNSService$2 -> com.hololo.app.dnschanger.d
     4:7:void onLost(android.net.Network):162:162 -> onLost
 com.hololo.app.dnschanger.dnschanger.DNSService$3 -> com.hololo.app.dnschanger.dnschanger.DNSService$c:
 # {"id":"sourceFile","fileName":"DNSService.java"}
-    java.lang.String val$domain -> a
+    int val$retryCount -> a
     byte[] val$rawQuery -> b
     java.nio.ByteBuffer val$originalPacket -> c
     int val$dnsOffset -> d
-    int val$type -> e
-    com.hololo.app.dnschanger.dnschanger.DNSService this$0 -> f
-    13:16:void <init>(com.hololo.app.dnschanger.dnschanger.DNSService,java.lang.String,byte[],java.nio.ByteBuffer,int,int):507:507 -> <init>
-    6:9:void onFailure(okhttp3.Call,java.io.IOException):510:510 -> a
+    java.lang.String val$domain -> e
+    int val$type -> f
+    com.hololo.app.dnschanger.dnschanger.DNSService this$0 -> g
+    15:18:void <init>(com.hololo.app.dnschanger.dnschanger.DNSService,int,byte[],java.nio.ByteBuffer,int,java.lang.String,int):525:525 -> <init>
+    11:43:void onFailure(okhttp3.Call,java.io.IOException):529:529 -> a
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Lh3/e;Ljava/io/IOException;)V"}
-    1:4:void onResponse(okhttp3.Call,okhttp3.Response):515:515 -> b
+    44:51:void onFailure(okhttp3.Call,java.io.IOException):530:530 -> a
+    52:55:void onFailure(okhttp3.Call,java.io.IOException):532:532 -> a
+    1:4:void onResponse(okhttp3.Call,okhttp3.Response):538:538 -> b
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Lh3/e;Lh3/d0;)V"}
-    5:15:void onResponse(okhttp3.Call,okhttp3.Response):516:516 -> b
-    16:21:void onResponse(okhttp3.Call,okhttp3.Response):520:520 -> b
-    22:43:void onResponse(okhttp3.Call,okhttp3.Response):522:522 -> b
-    44:61:void onResponse(okhttp3.Call,okhttp3.Response):525:525 -> b
-    62:76:void onResponse(okhttp3.Call,okhttp3.Response):526:526 -> b
-    77:79:void onResponse(okhttp3.Call,okhttp3.Response):527:527 -> b
-    80:87:void onResponse(okhttp3.Call,okhttp3.Response):536:536 -> b
-    88:93:void onResponse(okhttp3.Call,okhttp3.Response):532:532 -> b
-    94:111:void onResponse(okhttp3.Call,okhttp3.Response):533:533 -> b
-    112:114:void onResponse(okhttp3.Call,okhttp3.Response):535:535 -> b
-    115:122:void onResponse(okhttp3.Call,okhttp3.Response):536:536 -> b
-    123:137:void onResponse(okhttp3.Call,okhttp3.Response):517:517 -> b
-    138:143:void onResponse(okhttp3.Call,okhttp3.Response):536:536 -> b
-    144:152:void onResponse(okhttp3.Call,okhttp3.Response):515:515 -> b
+    5:15:void onResponse(okhttp3.Call,okhttp3.Response):539:539 -> b
+    16:21:void onResponse(okhttp3.Call,okhttp3.Response):543:543 -> b
+    22:43:void onResponse(okhttp3.Call,okhttp3.Response):545:545 -> b
+    44:61:void onResponse(okhttp3.Call,okhttp3.Response):548:548 -> b
+    62:76:void onResponse(okhttp3.Call,okhttp3.Response):549:549 -> b
+    77:79:void onResponse(okhttp3.Call,okhttp3.Response):550:550 -> b
+    80:87:void onResponse(okhttp3.Call,okhttp3.Response):559:559 -> b
+    88:93:void onResponse(okhttp3.Call,okhttp3.Response):555:555 -> b
+    94:111:void onResponse(okhttp3.Call,okhttp3.Response):556:556 -> b
+    112:114:void onResponse(okhttp3.Call,okhttp3.Response):558:558 -> b
+    115:122:void onResponse(okhttp3.Call,okhttp3.Response):559:559 -> b
+    123:137:void onResponse(okhttp3.Call,okhttp3.Response):540:540 -> b
+    138:143:void onResponse(okhttp3.Call,okhttp3.Response):559:559 -> b
+    144:152:void onResponse(okhttp3.Call,okhttp3.Response):538:538 -> b
 com.hololo.app.dnschanger.dnschanger.DNSService$ProtectedSocketFactory -> com.hololo.app.dnschanger.dnschanger.DNSService$d:
 # {"id":"sourceFile","fileName":"DNSService.java"}
-    com.hololo.app.dnschanger.dnschanger.DNSService this$0 -> a
-    1:1:void <init>(com.hololo.app.dnschanger.dnschanger.DNSService,com.hololo.app.dnschanger.dnschanger.DNSService$ProtectedSocketFactory-IA):0:0 -> <init>
-      # {"id":"com.android.tools.r8.synthesized"}
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lcom/hololo/app/dnschanger/dnschanger/DNSService;Lv1/t;)V"}
-    2:2:void <init>(com.hololo.app.dnschanger.dnschanger.DNSService):204:204 -> <init>
-    1:2:java.net.Socket createSocket():207:208 -> createSocket
-    3:4:java.net.Socket createSocket(java.lang.String,int):214:215 -> createSocket
-    5:6:java.net.Socket createSocket(java.lang.String,int,java.net.InetAddress,int):221:222 -> createSocket
-    7:8:java.net.Socket createSocket(java.net.InetAddress,int):228:229 -> createSocket
-    9:10:java.net.Socket createSocket(java.net.InetAddress,int,java.net.InetAddress,int):235:236 -> createSocket
-com.hololo.app.dnschanger.dnschanger.DNSService$ProtectedSocketFactory-IA -> v1.t:
-# {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
-# {"id":"com.android.tools.r8.synthesized"}
-com.hololo.app.dnschanger.dnschanger.DNSService_MembersInjector -> v1.u:
+    android.net.VpnService vpnService -> a
+    com.hololo.app.dnschanger.dnschanger.DNSService this$0 -> b
+    3:8:void <init>(com.hololo.app.dnschanger.dnschanger.DNSService,android.net.VpnService):208:208 -> <init>
+    1:2:java.net.Socket createSocket():214:215 -> createSocket
+    3:5:java.net.Socket createSocket(java.lang.String,int):221:223 -> createSocket
+    6:9:java.net.Socket createSocket(java.lang.String,int,java.net.InetAddress,int):229:232 -> createSocket
+    10:12:java.net.Socket createSocket(java.net.InetAddress,int):238:240 -> createSocket
+    13:16:java.net.Socket createSocket(java.net.InetAddress,int,java.net.InetAddress,int):246:249 -> createSocket
+com.hololo.app.dnschanger.dnschanger.DNSService_MembersInjector -> v1.t:
 # {"id":"sourceFile","fileName":"DNSService_MembersInjector.java"}
     1:3:void injectContext(com.hololo.app.dnschanger.dnschanger.DNSService,android.content.Context):58:58 -> a
     1:3:void injectGson(com.hololo.app.dnschanger.dnschanger.DNSService,com.google.gson.Gson):63:63 -> b
@@ -89243,7 +89246,7 @@ com.hololo.app.dnschanger.dnschanger.DaggerDNSComponent$Builder -> com.hololo.ap
       # {"id":"com.android.tools.r8.residualsignature","signature":"Lt1/a;"}
     1:1:void <init>(com.hololo.app.dnschanger.dnschanger.DaggerDNSComponent$Builder-IA):0:0 -> <init>
       # {"id":"com.android.tools.r8.synthesized"}
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lv1/v;)V"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lv1/u;)V"}
     2:2:void <init>():34:34 -> <init>
     1:9:com.hololo.app.dnschanger.dnschanger.DaggerDNSComponent$Builder applicationComponent(com.hololo.app.dnschanger.di.component.ApplicationComponent):43:43 -> a
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Lt1/a;)Lcom/hololo/app/dnschanger/dnschanger/a$a;"}
@@ -89253,7 +89256,7 @@ com.hololo.app.dnschanger.dnschanger.DaggerDNSComponent$Builder -> com.hololo.ap
     15:25:com.hololo.app.dnschanger.dnschanger.DNSComponent build():50:50 -> b
     1:9:com.hololo.app.dnschanger.dnschanger.DaggerDNSComponent$Builder dNSModule(com.hololo.app.dnschanger.dnschanger.DNSModule):38:38 -> c
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Lv1/h;)Lcom/hololo/app/dnschanger/dnschanger/a$a;"}
-com.hololo.app.dnschanger.dnschanger.DaggerDNSComponent$Builder-IA -> v1.v:
+com.hololo.app.dnschanger.dnschanger.DaggerDNSComponent$Builder-IA -> v1.u:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
 com.hololo.app.dnschanger.dnschanger.DaggerDNSComponent$DNSComponentImpl -> com.hololo.app.dnschanger.dnschanger.a$b:
@@ -89266,7 +89269,7 @@ com.hololo.app.dnschanger.dnschanger.DaggerDNSComponent$DNSComponentImpl -> com.
       # {"id":"com.android.tools.r8.residualsignature","signature":"Li2/a;"}
     1:1:void <init>(com.hololo.app.dnschanger.dnschanger.DNSModule,com.hololo.app.dnschanger.di.component.ApplicationComponent,com.hololo.app.dnschanger.dnschanger.DaggerDNSComponent$DNSComponentImpl-IA):0:0 -> <init>
       # {"id":"com.android.tools.r8.synthesized"}
-      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lv1/h;Lt1/a;Lv1/w;)V"}
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Lv1/h;Lt1/a;Lv1/v;)V"}
     2:2:void <init>(com.hololo.app.dnschanger.dnschanger.DNSModule,com.hololo.app.dnschanger.di.component.ApplicationComponent):62:62 -> <init>
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Lv1/h;Lt1/a;)V"}
     3:3:void <init>(com.hololo.app.dnschanger.dnschanger.DNSModule,com.hololo.app.dnschanger.di.component.ApplicationComponent):64:64 -> <init>
@@ -89277,10 +89280,10 @@ com.hololo.app.dnschanger.dnschanger.DaggerDNSComponent$DNSComponentImpl -> com.
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Lv1/h;Lt1/a;)V"}
     1:9:com.hololo.app.dnschanger.dnschanger.MainActivity injectMainActivity(com.hololo.app.dnschanger.dnschanger.MainActivity):89:89 -> d
     10:23:com.hololo.app.dnschanger.dnschanger.MainActivity injectMainActivity(com.hololo.app.dnschanger.dnschanger.MainActivity):90:90 -> d
-com.hololo.app.dnschanger.dnschanger.DaggerDNSComponent$DNSComponentImpl-IA -> v1.w:
+com.hololo.app.dnschanger.dnschanger.DaggerDNSComponent$DNSComponentImpl-IA -> v1.v:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
-com.hololo.app.dnschanger.dnschanger.IDNSView -> v1.x:
+com.hololo.app.dnschanger.dnschanger.IDNSView -> v1.w:
 # {"id":"sourceFile","fileName":"IDNSView.java"}
     void changeStatus(int) -> c
     void setServiceInfo(com.hololo.app.dnschanger.model.DNSModel) -> e
@@ -89657,12 +89660,12 @@ com.hololo.app.dnschanger.dnschanger.MainActivity -> com.hololo.app.dnschanger.d
     21:26:void lambda$changeStatus$2(int):252:252 -> z0
     27:33:void lambda$changeStatus$2(int):253:253 -> z0
     34:37:void lambda$changeStatus$2(int):254:254 -> z0
-com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticApiModelOutline0 -> v1.y:
+com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticApiModelOutline0 -> v1.x:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     1:1:android.net.Network com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticApiModelOutline$1$1396e1f6f3fc0fda658f20260c3cdec17b59ea2316ecdccf2dde38849a7fd9c9$0.m(android.net.ConnectivityManager):0:0 -> a
       # {"id":"com.android.tools.r8.synthesized"}
-com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda1 -> v1.f0:
+com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda1 -> v1.e0:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.hololo.app.dnschanger.dnschanger.MainActivity com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$1$0139f25f9caaec7800aacd7120642f51d5e5ec069280eca36fcb8ab15fcd714a$0.f$0 -> d
@@ -89671,7 +89674,7 @@ com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda1 -> v
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:void com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$1$0139f25f9caaec7800aacd7120642f51d5e5ec069280eca36fcb8ab15fcd714a$0.run():0:0 -> run
       # {"id":"com.android.tools.r8.synthesized"}
-com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda10 -> v1.z:
+com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda10 -> v1.y:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.hololo.app.dnschanger.dnschanger.MainActivity com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$2$30f14d6bcb65ae58c525ebd912910efc5cef45c96bbba37feb605b66e14dede6$0.f$0 -> d
@@ -89680,7 +89683,7 @@ com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda10 -> 
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:void com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$2$30f14d6bcb65ae58c525ebd912910efc5cef45c96bbba37feb605b66e14dede6$0.run():0:0 -> run
       # {"id":"com.android.tools.r8.synthesized"}
-com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda11 -> v1.a0:
+com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda11 -> v1.z:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.hololo.app.dnschanger.dnschanger.MainActivity com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$2$30f14d6bcb65ae58c525ebd912910efc5cef45c96bbba37feb605b66e14dede6$1.f$0 -> d
@@ -89691,7 +89694,7 @@ com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda11 -> 
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:void com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$2$30f14d6bcb65ae58c525ebd912910efc5cef45c96bbba37feb605b66e14dede6$1.run():0:0 -> run
       # {"id":"com.android.tools.r8.synthesized"}
-com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda12 -> v1.b0:
+com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda12 -> v1.a0:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.hololo.app.dnschanger.dnschanger.MainActivity com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$2$b683d9f394f64665d9fd3fc37c60109e31842901c3623cd88810caed9adbfd0f$0.f$0 -> d
@@ -89700,7 +89703,7 @@ com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda12 -> 
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:void com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$2$b683d9f394f64665d9fd3fc37c60109e31842901c3623cd88810caed9adbfd0f$0.run():0:0 -> run
       # {"id":"com.android.tools.r8.synthesized"}
-com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda13 -> v1.c0:
+com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda13 -> v1.b0:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.hololo.app.dnschanger.dnschanger.MainActivity com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$2$b683d9f394f64665d9fd3fc37c60109e31842901c3623cd88810caed9adbfd0f$1.f$0 -> d
@@ -89711,7 +89714,7 @@ com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda13 -> 
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:void com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$2$b683d9f394f64665d9fd3fc37c60109e31842901c3623cd88810caed9adbfd0f$1.run():0:0 -> run
       # {"id":"com.android.tools.r8.synthesized"}
-com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda14 -> v1.d0:
+com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda14 -> v1.c0:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.hololo.app.dnschanger.dnschanger.MainActivity com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$3$89ea22d7661b330e1141711e369551a50fe5cd18f81b00d6a8fc588fbc9e25af$0.f$0 -> d
@@ -89724,7 +89727,7 @@ com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda14 -> 
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Lcom/hololo/app/dnschanger/dnschanger/MainActivity;Lw1/d;)V"}
     1:1:void com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$3$89ea22d7661b330e1141711e369551a50fe5cd18f81b00d6a8fc588fbc9e25af$0.run():0:0 -> run
       # {"id":"com.android.tools.r8.synthesized"}
-com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda15 -> v1.e0:
+com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda15 -> v1.d0:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.hololo.app.dnschanger.dnschanger.MainActivity com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$4$7bb93b53ae3c00b1a892b1c75f8d2afd44b9377ee92f9861ac3358135d8b67bd$0.f$0 -> d
@@ -89735,7 +89738,7 @@ com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda15 -> 
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:void com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$4$7bb93b53ae3c00b1a892b1c75f8d2afd44b9377ee92f9861ac3358135d8b67bd$0.run():0:0 -> run
       # {"id":"com.android.tools.r8.synthesized"}
-com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda2 -> v1.g0:
+com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda2 -> v1.f0:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.hololo.app.dnschanger.dnschanger.MainActivity com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$1$02bb49ea36b7d66deb500aceb60e9ae8f72c09aab1ee30febb2f2ebb5d7be740$0.f$0 -> a
@@ -89744,14 +89747,14 @@ com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda2 -> v
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:void com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$1$02bb49ea36b7d66deb500aceb60e9ae8f72c09aab1ee30febb2f2ebb5d7be740$0.accept(java.lang.Object):0:0 -> a
       # {"id":"com.android.tools.r8.synthesized"}
-com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda3 -> v1.h0:
+com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda3 -> v1.g0:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     void com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$1$445d32e53b38bbd46e0f29c2c3461a4b165faf1eec3262a56bcce1b3b5ca3a63$0.<init>() -> <init>
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:java.lang.CharSequence com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$1$445d32e53b38bbd46e0f29c2c3461a4b165faf1eec3262a56bcce1b3b5ca3a63$0.filter(java.lang.CharSequence,int,int,android.text.Spanned,int,int):0:0 -> filter
       # {"id":"com.android.tools.r8.synthesized"}
-com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda4 -> v1.i0:
+com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda4 -> v1.h0:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.hololo.app.dnschanger.dnschanger.MainActivity com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$1$480ad668b3c82316ca118a64f4095ec3a08d9dd8cc4553287eca4fdedd9a395a$0.f$0 -> a
@@ -89762,7 +89765,7 @@ com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda4 -> v
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:void com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$1$480ad668b3c82316ca118a64f4095ec3a08d9dd8cc4553287eca4fdedd9a395a$0.onItemClick(com.hololo.app.dnschanger.model.DNSModel):0:0 -> a
       # {"id":"com.android.tools.r8.synthesized"}
-com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda5 -> v1.j0:
+com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda5 -> v1.i0:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.hololo.app.dnschanger.dnschanger.MainActivity com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$1$62fbb9314552c1c2bb8f78d7cd2d4131641b234d3e8e0fe7ed1b850b4e0ac476$0.f$0 -> d
@@ -89771,7 +89774,7 @@ com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda5 -> v
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:void com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$1$62fbb9314552c1c2bb8f78d7cd2d4131641b234d3e8e0fe7ed1b850b4e0ac476$0.run():0:0 -> run
       # {"id":"com.android.tools.r8.synthesized"}
-com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda6 -> v1.k0:
+com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda6 -> v1.j0:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.hololo.app.dnschanger.dnschanger.MainActivity com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$1$971d2b921bb7f40a4d941c209f7f1b81f03fd0d01e0a019c143319105ffa860e$0.f$0 -> a
@@ -89780,7 +89783,7 @@ com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda6 -> v
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:void com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$1$971d2b921bb7f40a4d941c209f7f1b81f03fd0d01e0a019c143319105ffa860e$0.onActivityResult(java.lang.Object):0:0 -> a
       # {"id":"com.android.tools.r8.synthesized"}
-com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda7 -> v1.l0:
+com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda7 -> v1.k0:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.hololo.app.dnschanger.dnschanger.MainActivity com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$1$97207a6db869c2dd7f783f5abb67382ec7ce3b24aba7470f4e6f7ae10f489d24$0.f$0 -> d
@@ -89789,7 +89792,7 @@ com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda7 -> v
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:void com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$1$97207a6db869c2dd7f783f5abb67382ec7ce3b24aba7470f4e6f7ae10f489d24$0.run():0:0 -> run
       # {"id":"com.android.tools.r8.synthesized"}
-com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda8 -> v1.m0:
+com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda8 -> v1.l0:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.hololo.app.dnschanger.dnschanger.MainActivity com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$1$d0ca2c7f682cb8ccb6ecb7ce110f5d02665bb4448167bbcbbd1df96689305495$0.f$0 -> d
@@ -89798,7 +89801,7 @@ com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda8 -> v
       # {"id":"com.android.tools.r8.synthesized"}
     1:1:void com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$1$d0ca2c7f682cb8ccb6ecb7ce110f5d02665bb4448167bbcbbd1df96689305495$0.run():0:0 -> run
       # {"id":"com.android.tools.r8.synthesized"}
-com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda9 -> v1.n0:
+com.hololo.app.dnschanger.dnschanger.MainActivity$$ExternalSyntheticLambda9 -> v1.m0:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.hololo.app.dnschanger.dnschanger.MainActivity com.hololo.app.dnschanger.dnschanger.MainActivity$$InternalSyntheticLambda$2$00f44accd3fb5ca45d6fb0fd2796f919c6ef67835c945f38b08c5414d5b1a9c9$0.f$0 -> d
@@ -89859,7 +89862,7 @@ com.hololo.app.dnschanger.dnschanger.MainActivity$DNSAdapter -> com.hololo.app.d
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Landroidx/recyclerview/widget/RecyclerView$c0;I)V"}
     1:5:androidx.recyclerview.widget.RecyclerView$ViewHolder onCreateViewHolder(android.view.ViewGroup,int):634:634 -> onCreateViewHolder
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Landroid/view/ViewGroup;I)Landroidx/recyclerview/widget/RecyclerView$c0;"}
-com.hololo.app.dnschanger.dnschanger.MainActivity$DNSAdapter$$ExternalSyntheticLambda0 -> v1.o0:
+com.hololo.app.dnschanger.dnschanger.MainActivity$DNSAdapter$$ExternalSyntheticLambda0 -> v1.n0:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.hololo.app.dnschanger.dnschanger.MainActivity$DNSAdapter com.hololo.app.dnschanger.dnschanger.MainActivity$DNSAdapter$$InternalSyntheticLambda$2$cf11aafb527df15a9b5e1c5f6cd8faa3cec2ce015950de164c99a6e198bd5498$0.f$0 -> a
@@ -89872,7 +89875,7 @@ com.hololo.app.dnschanger.dnschanger.MainActivity$DNSAdapter$$ExternalSyntheticL
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Lcom/hololo/app/dnschanger/dnschanger/MainActivity$a;Lcom/hololo/app/dnschanger/model/DNSModel;)V"}
     1:1:void com.hololo.app.dnschanger.dnschanger.MainActivity$DNSAdapter$$InternalSyntheticLambda$2$cf11aafb527df15a9b5e1c5f6cd8faa3cec2ce015950de164c99a6e198bd5498$0.onClick(android.view.View):0:0 -> onClick
       # {"id":"com.android.tools.r8.synthesized"}
-com.hololo.app.dnschanger.dnschanger.MainActivity$DNSAdapter$$ExternalSyntheticLambda1 -> v1.p0:
+com.hololo.app.dnschanger.dnschanger.MainActivity$DNSAdapter$$ExternalSyntheticLambda1 -> v1.o0:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.hololo.app.dnschanger.dnschanger.MainActivity$DNSAdapter com.hololo.app.dnschanger.dnschanger.MainActivity$DNSAdapter$$InternalSyntheticLambda$2$cf11aafb527df15a9b5e1c5f6cd8faa3cec2ce015950de164c99a6e198bd5498$1.f$0 -> a
@@ -89890,7 +89893,7 @@ com.hololo.app.dnschanger.dnschanger.MainActivity$DNSAdapter$$ExternalSyntheticL
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Lcom/hololo/app/dnschanger/dnschanger/MainActivity$a;Lcom/hololo/app/dnschanger/dnschanger/MainActivity$a$a;Lcom/hololo/app/dnschanger/model/DNSModel;I)V"}
     1:1:void com.hololo.app.dnschanger.dnschanger.MainActivity$DNSAdapter$$InternalSyntheticLambda$2$cf11aafb527df15a9b5e1c5f6cd8faa3cec2ce015950de164c99a6e198bd5498$1.onClick(android.view.View):0:0 -> onClick
       # {"id":"com.android.tools.r8.synthesized"}
-com.hololo.app.dnschanger.dnschanger.MainActivity$DNSAdapter$$ExternalSyntheticLambda2 -> v1.q0:
+com.hololo.app.dnschanger.dnschanger.MainActivity$DNSAdapter$$ExternalSyntheticLambda2 -> v1.p0:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.hololo.app.dnschanger.dnschanger.MainActivity$DNSAdapter com.hololo.app.dnschanger.dnschanger.MainActivity$DNSAdapter$$InternalSyntheticLambda$3$1d8a92ea7fab4a80b6a5d013dfec55eb26a9e8452fbaea7f7fe31b81ccdb5264$0.f$0 -> d
@@ -89905,7 +89908,7 @@ com.hololo.app.dnschanger.dnschanger.MainActivity$DNSAdapter$$ExternalSyntheticL
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Lcom/hololo/app/dnschanger/dnschanger/MainActivity$a;Lcom/hololo/app/dnschanger/model/DNSModel;I)V"}
     1:1:void com.hololo.app.dnschanger.dnschanger.MainActivity$DNSAdapter$$InternalSyntheticLambda$3$1d8a92ea7fab4a80b6a5d013dfec55eb26a9e8452fbaea7f7fe31b81ccdb5264$0.run():0:0 -> run
       # {"id":"com.android.tools.r8.synthesized"}
-com.hololo.app.dnschanger.dnschanger.MainActivity$DNSAdapter$$ExternalSyntheticLambda3 -> v1.r0:
+com.hololo.app.dnschanger.dnschanger.MainActivity$DNSAdapter$$ExternalSyntheticLambda3 -> v1.q0:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
     com.hololo.app.dnschanger.dnschanger.MainActivity$DNSAdapter com.hololo.app.dnschanger.dnschanger.MainActivity$DNSAdapter$$InternalSyntheticLambda$4$e5ef1dfc2d9e7985175a35d40ccab0f53ea7df913061d9d5cefd3e08fa3a97f0$0.f$0 -> d
@@ -89932,7 +89935,7 @@ com.hololo.app.dnschanger.dnschanger.MainActivity$DNSAdapter$ViewHolder -> com.h
 com.hololo.app.dnschanger.dnschanger.MainActivity$OnItemClickListener -> com.hololo.app.dnschanger.dnschanger.MainActivity$b:
 # {"id":"sourceFile","fileName":"MainActivity.java"}
     void onItemClick(com.hololo.app.dnschanger.model.DNSModel) -> a
-com.hololo.app.dnschanger.dnschanger.MainActivity_MembersInjector -> v1.s0:
+com.hololo.app.dnschanger.dnschanger.MainActivity_MembersInjector -> v1.r0:
 # {"id":"sourceFile","fileName":"MainActivity_MembersInjector.java"}
     1:3:void injectGson(com.hololo.app.dnschanger.dnschanger.MainActivity,com.google.gson.Gson):52:52 -> a
     1:5:void injectPresenter(com.hololo.app.dnschanger.dnschanger.MainActivity,java.lang.Object):47:47 -> b
@@ -97641,11 +97644,13 @@ okhttp3.OkHttpClient$Builder -> h3.z$a:
     1:1:javax.net.ssl.X509TrustManager getX509TrustManagerOrNull$okhttp():0:0 -> F
     8:14:okhttp3.OkHttpClient$Builder readTimeout(long,java.util.concurrent.TimeUnit):974:974 -> G
       # {"id":"com.android.tools.r8.residualsignature","signature":"(JLjava/util/concurrent/TimeUnit;)Lh3/z$a;"}
-    6:13:okhttp3.OkHttpClient$Builder socketFactory(javax.net.SocketFactory):723:723 -> H
+    1:1:okhttp3.OkHttpClient$Builder retryOnConnectionFailure(boolean):0:0 -> H
+      # {"id":"com.android.tools.r8.residualsignature","signature":"(Z)Lh3/z$a;"}
+    6:13:okhttp3.OkHttpClient$Builder socketFactory(javax.net.SocketFactory):723:723 -> I
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Ljavax/net/SocketFactory;)Lh3/z$a;"}
-    14:25:okhttp3.OkHttpClient$Builder socketFactory(javax.net.SocketFactory):725:725 -> H
-    26:37:okhttp3.OkHttpClient$Builder socketFactory(javax.net.SocketFactory):723:723 -> H
-    8:14:okhttp3.OkHttpClient$Builder writeTimeout(long,java.util.concurrent.TimeUnit):1002:1002 -> I
+    14:25:okhttp3.OkHttpClient$Builder socketFactory(javax.net.SocketFactory):725:725 -> I
+    26:37:okhttp3.OkHttpClient$Builder socketFactory(javax.net.SocketFactory):723:723 -> I
+    8:14:okhttp3.OkHttpClient$Builder writeTimeout(long,java.util.concurrent.TimeUnit):1002:1002 -> J
       # {"id":"com.android.tools.r8.residualsignature","signature":"(JLjava/util/concurrent/TimeUnit;)Lh3/z$a;"}
     1:6:okhttp3.OkHttpClient build():1069:1069 -> a
       # {"id":"com.android.tools.r8.residualsignature","signature":"()Lh3/z;"}
@@ -98335,24 +98340,24 @@ okhttp3.internal.Util -> i3.d:
 okhttp3.internal.Util$$ExternalSyntheticLambda0 -> i3.b:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
-    java.lang.String okhttp3.internal.Util$$InternalSyntheticLambda$2$211b5dc74c913220f256108e03a27b2026995048f2732ff5419fc945848e0c54$0.f$0 -> a
+    java.lang.String okhttp3.internal.Util$$InternalSyntheticLambda$1$211b5dc74c913220f256108e03a27b2026995048f2732ff5419fc945848e0c54$0.f$0 -> a
       # {"id":"com.android.tools.r8.synthesized"}
-    boolean okhttp3.internal.Util$$InternalSyntheticLambda$2$211b5dc74c913220f256108e03a27b2026995048f2732ff5419fc945848e0c54$0.f$1 -> b
+    boolean okhttp3.internal.Util$$InternalSyntheticLambda$1$211b5dc74c913220f256108e03a27b2026995048f2732ff5419fc945848e0c54$0.f$1 -> b
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void okhttp3.internal.Util$$InternalSyntheticLambda$2$211b5dc74c913220f256108e03a27b2026995048f2732ff5419fc945848e0c54$0.<init>(java.lang.String,boolean):0:0 -> <init>
+    1:1:void okhttp3.internal.Util$$InternalSyntheticLambda$1$211b5dc74c913220f256108e03a27b2026995048f2732ff5419fc945848e0c54$0.<init>(java.lang.String,boolean):0:0 -> <init>
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:java.lang.Thread okhttp3.internal.Util$$InternalSyntheticLambda$2$211b5dc74c913220f256108e03a27b2026995048f2732ff5419fc945848e0c54$0.newThread(java.lang.Runnable):0:0 -> newThread
+    1:1:java.lang.Thread okhttp3.internal.Util$$InternalSyntheticLambda$1$211b5dc74c913220f256108e03a27b2026995048f2732ff5419fc945848e0c54$0.newThread(java.lang.Runnable):0:0 -> newThread
       # {"id":"com.android.tools.r8.synthesized"}
 okhttp3.internal.Util$$ExternalSyntheticLambda1 -> i3.c:
 # {"id":"sourceFile","fileName":"R8$$SyntheticClass"}
 # {"id":"com.android.tools.r8.synthesized"}
-    okhttp3.EventListener okhttp3.internal.Util$$InternalSyntheticLambda$2$2772f077014f473d42590b605bf5e0b5f44c0d6c5a0b5ed86fd77510defe4253$0.f$0 -> a
+    okhttp3.EventListener okhttp3.internal.Util$$InternalSyntheticLambda$1$2772f077014f473d42590b605bf5e0b5f44c0d6c5a0b5ed86fd77510defe4253$0.f$0 -> a
       # {"id":"com.android.tools.r8.residualsignature","signature":"Lh3/t;"}
       # {"id":"com.android.tools.r8.synthesized"}
-    1:1:void okhttp3.internal.Util$$InternalSyntheticLambda$2$2772f077014f473d42590b605bf5e0b5f44c0d6c5a0b5ed86fd77510defe4253$0.<init>(okhttp3.EventListener):0:0 -> <init>
+    1:1:void okhttp3.internal.Util$$InternalSyntheticLambda$1$2772f077014f473d42590b605bf5e0b5f44c0d6c5a0b5ed86fd77510defe4253$0.<init>(okhttp3.EventListener):0:0 -> <init>
       # {"id":"com.android.tools.r8.synthesized"}
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Lh3/t;)V"}
-    1:1:okhttp3.EventListener okhttp3.internal.Util$$InternalSyntheticLambda$2$2772f077014f473d42590b605bf5e0b5f44c0d6c5a0b5ed86fd77510defe4253$0.create(okhttp3.Call):0:0 -> a
+    1:1:okhttp3.EventListener okhttp3.internal.Util$$InternalSyntheticLambda$1$2772f077014f473d42590b605bf5e0b5f44c0d6c5a0b5ed86fd77510defe4253$0.create(okhttp3.Call):0:0 -> a
       # {"id":"com.android.tools.r8.synthesized"}
       # {"id":"com.android.tools.r8.residualsignature","signature":"(Lh3/e;)Lh3/t;"}
 okhttp3.internal.authenticator.JavaNetAuthenticator -> j3.a:

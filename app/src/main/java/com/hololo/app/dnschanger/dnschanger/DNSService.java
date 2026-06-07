@@ -194,46 +194,59 @@ public class DNSService extends VpnService {
 
     private synchronized void initOkHttp() {
         okHttpClient = new OkHttpClient.Builder()
-                .socketFactory(new ProtectedSocketFactory())
+                .socketFactory(new ProtectedSocketFactory(this))
                 .connectTimeout(5, TimeUnit.SECONDS)
                 .readTimeout(5, TimeUnit.SECONDS)
                 .writeTimeout(5, TimeUnit.SECONDS)
+                .retryOnConnectionFailure(true)
                 .build();
     }
 
     private class ProtectedSocketFactory extends SocketFactory {
+        private final VpnService vpnService;
+
+        public ProtectedSocketFactory(VpnService vpnService) {
+            this.vpnService = vpnService;
+        }
+
         @Override
         public Socket createSocket() throws IOException {
             Socket socket = new Socket();
-            protect(socket);
+            vpnService.protect(socket);
             return socket;
         }
 
         @Override
         public Socket createSocket(String host, int port) throws IOException {
-            Socket socket = new Socket(host, port);
-            protect(socket);
+            Socket socket = new Socket();
+            vpnService.protect(socket);
+            socket.connect(new java.net.InetSocketAddress(host, port));
             return socket;
         }
 
         @Override
         public Socket createSocket(String host, int port, InetAddress localHost, int localPort) throws IOException {
-            Socket socket = new Socket(host, port, localHost, localPort);
-            protect(socket);
+            Socket socket = new Socket();
+            vpnService.protect(socket);
+            socket.bind(new java.net.InetSocketAddress(localHost, localPort));
+            socket.connect(new java.net.InetSocketAddress(host, port));
             return socket;
         }
 
         @Override
         public Socket createSocket(InetAddress host, int port) throws IOException {
-            Socket socket = new Socket(host, port);
-            protect(socket);
+            Socket socket = new Socket();
+            vpnService.protect(socket);
+            socket.connect(new java.net.InetSocketAddress(host, port));
             return socket;
         }
 
         @Override
         public Socket createSocket(InetAddress address, int port, InetAddress localAddress, int localPort) throws IOException {
-            Socket socket = new Socket(address, port, localAddress, localPort);
-            protect(socket);
+            Socket socket = new Socket();
+            vpnService.protect(socket);
+            socket.bind(new java.net.InetSocketAddress(localAddress, localPort));
+            socket.connect(new java.net.InetSocketAddress(address, port));
             return socket;
         }
     }
@@ -493,6 +506,10 @@ public class DNSService extends VpnService {
     }
 
     private void forwardToDoH(byte[] rawQuery, ByteBuffer originalPacket, int dnsOffset, String domain, int type) {
+        forwardToDoHWithRetry(rawQuery, originalPacket, dnsOffset, domain, type, 0);
+    }
+
+    private void forwardToDoHWithRetry(byte[] rawQuery, ByteBuffer originalPacket, int dnsOffset, String domain, int type, int retryCount) {
         String dohUrl = (dnsModel != null && dnsModel.getFirstDns() != null && dnsModel.getFirstDns().startsWith("http")) 
                 ? dnsModel.getFirstDns() 
                 : "https://1.1.1.1/dns-query";
@@ -502,12 +519,18 @@ public class DNSService extends VpnService {
                 .url(dohUrl)
                 .post(body)
                 .addHeader("Accept", "application/dns-message")
+                .header("Host", "cloudflare-dns.com") // Ensure Host header is correct if using IP URL
                 .build();
 
         okHttpClient.newCall(request).enqueue(new Callback() {
             @Override
             public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                Timber.e(e, "DoH Request failed");
+                if (retryCount < 2) {
+                    Timber.w("DoH Request failed (retry %d): %s", retryCount + 1, e.getMessage());
+                    forwardToDoHWithRetry(rawQuery, originalPacket, dnsOffset, domain, type, retryCount + 1);
+                } else {
+                    Timber.e(e, "DoH Request failed after retries");
+                }
             }
 
             @Override
