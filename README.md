@@ -1,43 +1,40 @@
-# Dns To Go - Advanced DNS Optimizer
+# Dns To Go - Advanced DNS Security & Optimization
 
-Dns To Go is a high-performance, gamer-focused DNS optimization tool for Android. It helps users reduce latency, bypass regional restrictions, and improve security with a modern, high-tech interface.
+Dns To Go is a professional, high-performance DNS optimization and security tool for Android. It leverages modern network protocols to provide a secure, fast, and private browsing experience, especially focused on gaming and streaming performance.
 
-## ✨ Features
-- **Gaming Mode:** Automatically finds and connects to the fastest DNS server for gaming.
-- **Streaming Mode:** Optimizes your connection for buffer-free streaming on platforms like YouTube and Netflix.
-- **Live Monitoring:** Real-time ping testing and latency charts.
-- **Network Insights:** Automatic ISP detection and network type monitoring.
-- **Bilingual Support:** Fully localized in English and Persian.
-- **Modern UI:** Gamer-style dark theme with neon accents and smooth animations.
-- **Customizable:** Add and save your own custom DNS servers.
-- **Advanced Logging:** Dedicated log system to track connection status, errors, and system events.
+## 🛡️ Key Features
 
-## 🚀 Recent Updates
+- **DNS-over-HTTPS (DoH):** Uses RFC 8484 for fully encrypted DNS queries, bypassing ISP monitoring and regional blocks.
+- **Local DNS Resolver:** A robust, built-in resolver that parses IP (v4/v6) and UDP/53 traffic directly from a high-performance TUN interface.
+- **Per-App Routing:** Select precisely which applications should use the secure DNS tunnel.
+- **Intelligent DNS Cache:** Real-time TTL management to reduce latency to nearly zero for frequent queries.
+- **Advanced Ad-Blocking:** Integrated filtering engine with support for standard `hosts`, `AdGuard`, and `dnsmasq` blocklist formats.
+- **IPv6 Anti-Leak:** Complete protection against DNS leaks on IPv6 networks through comprehensive traffic routing.
+- **Live Monitoring & Stats:** Real-time dashboard showing today's query volume, blocked items, and performance metrics.
+- **Seamless Handover:** Robust handling of network changes (Wi-Fi to LTE) without connection drops.
+- **Gaming & Streaming Modes:** Pre-configured low-latency servers optimized for gaming and buffer-free streaming.
 
-### Version 2.1.1 (Current)
-- **Log System:** New "Logs" section for real-time tracking of connection attempts, errors, and background events.
-- **New Servers:** Added high-performance **Zeus** and **Bogzar** DNS servers.
-- **Bug Fix:** Resolved the "App Restart Required" bug; connection status now updates instantly.
-- **Stability:** Fixed various race conditions and improved background service reliability.
-- **Modernization:** Refactored code to use Activity Result API and improved Android 14 compatibility.
+## 🚀 Recent Updates (Version 2.5.0)
 
-### Version 2.0.0
-- Complete UI overhaul with Material Design 3.
-- Improved stability on Android 12, 13, and 14.
-- Real-time QPS (Queries Per Second) and Health Check.
-- Persistent notification for background stability.
+- **Engine Overhaul:** Fully modernized `VpnService` implementation for Android 14 compatibility.
+- **Statistics Dashboard:** New UI section for real-time traffic insights.
+- **Professional Logs:** Structured logging with source identification (Cache, Upstream, Blocked) and CSV export.
+- **Stability Fixes:** Resolved race conditions in connection status and improved background reliability.
+- **New Servers:** Added high-performance **Zeus** and **Bogzar** DNS providers.
 
 ## 🛠 Tech Stack
+
 - **Architecture:** MVP (Dagger 2 for DI)
-- **Networking/Reactive:** RxJava 2 & RxAndroid
-- **Monitoring:** MPAndroidChart for real-time latency graphs
-- **View Binding:** ButterKnife (Modernization in progress)
-- **Logging:** Timber with persistent storage bridge
+- **Networking:** OkHttp (RFC 8484), RxJava 2, Custom TUN Parser
+- **Performance:** Atomic Counters, Concurrent DNS Cache
+- **UI:** Material Design 3, MPAndroidChart
+- **Logging:** Timber with Persistent Ring-Buffer storage
 
 ## 🏗 Build
-To build the APK, run:
+
+To build the signed APK, run:
 ```shell
-./gradlew assembleDebug
+./gradlew assembleRelease
 ```
 
 ## 📄 License
