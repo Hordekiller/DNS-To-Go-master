@@ -412,33 +412,26 @@ public class DNSService extends VpnService {
         int version = (packet.get(0) >> 4) & 0x0F;
         if (version == 4) {
             handleIPv4(packet, length);
-        } else if (version == 6) {
+        } else if (version == 6 && length >= 40) {
             handleIPv6(packet, length);
         }
     }
 
     private void handleIPv4(ByteBuffer packet, int length) {
         int ihl = (packet.get(0) & 0x0F) * 4;
-        if (length < ihl) return;
+        if (length < ihl + 8) return; // Need at least IP + UDP header
+        
         byte protocol = packet.get(9);
-
         if (protocol == 17) { // UDP
-            if (length < ihl + 8) return;
             int destPort = packet.getShort(ihl + 2) & 0xFFFF;
             if (destPort == 53) {
                 parseDNS(packet, ihl + 8);
-            }
-        } else if (protocol == 6) { // TCP
-            if (length < ihl + 2) return;
-            int destPort = packet.getShort(ihl + 2) & 0xFFFF;
-            if (destPort == 53) {
-                Timber.d("TCP DNS detected, dropping (unsupported)");
             }
         }
     }
 
     private void handleIPv6(ByteBuffer packet, int length) {
-        if (length < 48) return;
+        if (length < 40 + 8) return; // IPv6 Header (40) + UDP Header (8)
         byte nextHeader = packet.get(6);
         if (nextHeader == 17) { // UDP
             int destPort = packet.getShort(42) & 0xFFFF;
@@ -449,56 +442,54 @@ public class DNSService extends VpnService {
     }
 
     private void parseDNS(ByteBuffer packet, int dnsOffset) {
-        int originalPos = packet.position();
-        packet.position(dnsOffset);
-        if (packet.remaining() < 12) return;
+        if (packet.limit() < dnsOffset + 12) return; // DNS Header is 12 bytes
         
+        packet.position(dnsOffset);
         int transactionId = packet.getShort() & 0xFFFF;
         packet.getShort(); // Flags
         int qdCount = packet.getShort() & 0xFFFF;
 
-        if (qdCount > 0) {
-            packet.position(dnsOffset + 12);
+        if (qdCount > 0 && packet.remaining() > 0) {
+            // Position is already at dnsOffset + 6, we need to skip 6 more bytes to get to Question
+            // QD (2) + AN (2) + NS (2) + AR (2) = 8 bytes after ID(2) and Flags(2).
+            // Currently at Offset+6 (ID, Flags, QD). Next are AN, NS, AR (6 bytes).
+            packet.getShort(); // AN
+            packet.getShort(); // NS
+            packet.getShort(); // AR
+            
             String domain = parseDomainName(packet);
-            if (packet.remaining() >= 2) {
+            if (packet.remaining() >= 4) { // QTYPE (2) + QCLASS (2)
                 int type = packet.getShort() & 0xFFFF;
+                packet.getShort(); // QCLASS
+                
                 Timber.d("DNS Query: ID=%d, Domain=%s, Type=%d", transactionId, domain, type);
                 
                 statsManager.incrementTotal(this, rxBus);
 
-                // Check Blocklist
                 if (blockManager.isBlocked(domain)) {
-                    Timber.i("Blocked Domain detected: %s", domain);
                     LogManager.addLog(this, domain + " | BLOCKED | Local");
                     statsManager.incrementBlocked(this, rxBus);
                     sendNxDomainResponse(transactionId, domain, packet);
-                    packet.position(originalPos);
                     return;
                 }
 
-                // Check Cache
                 byte[] cachedResponse = dnsCache.get(domain, type);
                 if (cachedResponse != null) {
-                    Timber.d("Cache Hit: %s", domain);
                     LogManager.addLog(this, domain + " | ALLOWED | Cache");
-                    // Update Transaction ID in cached response
                     ByteBuffer responseBuf = ByteBuffer.wrap(cachedResponse.clone());
                     responseBuf.putShort((short) transactionId);
                     handleDoHResponse(responseBuf.array(), packet, dnsOffset);
-                    packet.position(originalPos);
                     return;
                 }
 
-                // Extract raw DNS query
-                byte[] rawQuery = new byte[packet.position() - dnsOffset + 4]; // +4 for QTYPE and QCLASS
+                int currentPos = packet.position();
+                byte[] rawQuery = new byte[currentPos - dnsOffset];
                 packet.position(dnsOffset);
                 packet.get(rawQuery);
 
-                // Forward to DoH
                 forwardToDoH(rawQuery, packet, dnsOffset, domain, type);
             }
         }
-        packet.position(originalPos);
     }
 
     private void forwardToDoH(byte[] rawQuery, ByteBuffer originalPacket, int dnsOffset, String domain, int type) {
