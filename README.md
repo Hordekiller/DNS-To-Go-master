@@ -14,13 +14,26 @@ Dns To Go is a professional, high-performance DNS optimization and security tool
 - **Seamless Handover:** Robust handling of network changes (Wi-Fi to LTE) without connection drops.
 - **Gaming & Streaming Modes:** Pre-configured low-latency servers optimized for gaming and buffer-free streaming.
 
-## 🚀 Recent Updates (Version 2.5.0)
+## 🚀 Release History
 
+### 🌟 Version 2.5.0 (Latest Release)
 - **Engine Overhaul:** Fully modernized `VpnService` implementation for Android 14 compatibility.
-- **Statistics Dashboard:** New UI section for real-time traffic insights.
+- **Statistics Dashboard:** New UI section for real-time traffic insights (Total, Blocked, %).
 - **Professional Logs:** Structured logging with source identification (Cache, Upstream, Blocked) and CSV export.
-- **Stability Fixes:** Resolved race conditions in connection status and improved background reliability.
+- **Network Handover:** Robust handling of Wi-Fi/Mobile transitions using `setUnderlyingNetworks`.
+- **Advanced Resolver:** Local packet parsing with IPv6 support and Ad-blocking engine.
+
+### 🛠️ Version 2.1.1
 - **New Servers:** Added high-performance **Zeus** and **Bogzar** DNS providers.
+- **UI Sync Fix:** Resolved race conditions in connection status display (Instant UI updates).
+- **Stability Fixes:** Improved background reliability and thread management.
+- **Modernization:** Initial migration to Activity Result API.
+
+### 🏗️ Version 2.0.0
+- **UI Redesign:** Complete transition to Material Design 3.
+- **Base Engine:** Core implementation of the secure VPN tunnel.
+- **Localization:** Full support for English and Persian languages.
+- **Dark Mode:** System-wide dark theme support.
 
 ## 🛠 Tech Stack
 
