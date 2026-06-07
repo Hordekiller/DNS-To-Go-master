@@ -66,7 +66,7 @@ public class LogManager {
     }
 
     private static void shareFile(Context context, File file) {
-        Uri uri = FileProvider.getUriForFile(context, context.getPackageName() + ".provider", file);
+        Uri uri = FileProvider.getUriForFile(context, "com.hololo.app.dnschanger.provider", file);
         Intent intent = new Intent(Intent.ACTION_SEND);
         intent.setType("text/csv");
         intent.putExtra(Intent.EXTRA_STREAM, uri);

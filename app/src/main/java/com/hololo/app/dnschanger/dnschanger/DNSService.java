@@ -371,6 +371,10 @@ public class DNSService extends VpnService {
                     return;
                 }
 
+                // Initialize traffic counters after tunnel is established
+                startRxBytes = TrafficStats.getUidRxBytes(android.os.Process.myUid());
+                startTxBytes = TrafficStats.getUidTxBytes(android.os.Process.myUid());
+
                 try (FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
                      FileOutputStream output = new FileOutputStream(fileDescriptor.getFileDescriptor())) {
                     

@@ -23,7 +23,7 @@ Dns To Go is a professional, high-performance DNS optimization and security tool
 - **Network Handover:** Robust handling of Wi-Fi/Mobile transitions using `setUnderlyingNetworks`.
 - **Advanced Resolver:** Local packet parsing with IPv6 support and Ad-blocking engine.
 
-### 🛠️ Version 2.1.1
+### 🛠️ Version 2.1.1 (Current)
 - **New Servers:** Added high-performance **Zeus** and **Bogzar** DNS providers.
 - **UI Sync Fix:** Resolved race conditions in connection status display (Instant UI updates).
 - **Stability Fixes:** Improved background reliability and thread management.
