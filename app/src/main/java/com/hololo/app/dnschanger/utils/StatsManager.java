@@ -2,20 +2,26 @@ package com.hololo.app.dnschanger.utils;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+
 import androidx.preference.PreferenceManager;
+
 import com.hololo.app.dnschanger.utils.event.StatsUpdateEvent;
+
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class StatsManager {
     private static final String PREF_TOTAL = "stats_total";
     private static final String PREF_BLOCKED = "stats_blocked";
     private static final String PREF_LAST_DATE = "stats_last_date";
-    
+    private static final int PERSIST_INTERVAL = 25;
+
     private final AtomicLong totalQueries = new AtomicLong(0);
     private final AtomicLong blockedQueries = new AtomicLong(0);
+    private final AtomicInteger persistCounter = new AtomicInteger(0);
     private final SimpleDateFormat dayFormat = new SimpleDateFormat("yyyyMMdd", Locale.US);
 
     public StatsManager(Context context) {
@@ -39,18 +45,29 @@ public class StatsManager {
         long total = totalQueries.incrementAndGet();
         long blocked = blockedQueries.get();
         rxBus.sendEvent(new StatsUpdateEvent(total, blocked));
-        persist(context);
+        maybePersist(context);
     }
 
     public void incrementBlocked(Context context, RxBus rxBus) {
         long blocked = blockedQueries.incrementAndGet();
         long total = totalQueries.get();
         rxBus.sendEvent(new StatsUpdateEvent(total, blocked));
-        persist(context);
+        maybePersist(context);
     }
 
-    private void persist(Context context) {
-        // In a real app, this should be debounced. For now, we use apply() which is async.
+    private void maybePersist(Context context) {
+        int count = persistCounter.incrementAndGet();
+        if (count % PERSIST_INTERVAL != 0) return;
+
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        prefs.edit()
+                .putLong(PREF_TOTAL, totalQueries.get())
+                .putLong(PREF_BLOCKED, blockedQueries.get())
+                .apply();
+    }
+
+    public void persistNow(Context context) {
+        persistCounter.set(0);
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         prefs.edit()
                 .putLong(PREF_TOTAL, totalQueries.get())
@@ -61,6 +78,7 @@ public class StatsManager {
     private void reset(Context context, String today) {
         totalQueries.set(0);
         blockedQueries.set(0);
+        persistCounter.set(0);
         PreferenceManager.getDefaultSharedPreferences(context).edit()
                 .putLong(PREF_TOTAL, 0)
                 .putLong(PREF_BLOCKED, 0)

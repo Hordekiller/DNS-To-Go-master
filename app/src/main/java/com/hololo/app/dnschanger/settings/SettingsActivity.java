@@ -8,12 +8,8 @@ import com.hololo.app.dnschanger.utils.locale.LocaleHelper;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import android.view.MenuItem;
-import android.widget.FrameLayout;
 
 import com.hololo.app.dnschanger.R;
-
-import butterknife.BindView;
-import butterknife.ButterKnife;
 
 
 public class SettingsActivity extends AppCompatActivity {
@@ -23,16 +19,14 @@ public class SettingsActivity extends AppCompatActivity {
         super.attachBaseContext(LocaleHelper.onAttach(newBase));
     }
 
-    @BindView(R.id.toolbar)
-    Toolbar toolbar;
-    @BindView(R.id.fragment_container)
-    FrameLayout fragmentContainer;
+    private Toolbar toolbar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
-        ButterKnife.bind(this);
+
+        toolbar = findViewById(R.id.toolbar);
 
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {

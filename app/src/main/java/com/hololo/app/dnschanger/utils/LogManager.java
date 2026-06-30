@@ -3,11 +3,14 @@ package com.hololo.app.dnschanger.utils;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+
 import androidx.core.content.FileProvider;
 import androidx.preference.PreferenceManager;
+
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -21,21 +24,33 @@ import java.util.Locale;
 public class LogManager {
     private static final String PREF_LOGS = "app_logs";
     private static final int MAX_LOGS = 500;
+    private static final int BATCH_FLUSH_SIZE = 50;
     private static final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss", Locale.getDefault());
     private static final Gson gson = new GsonBuilder().create();
 
-    public static void addLog(Context context, String message) {
-        // Optimized structured message
+    private static final List<String> pendingLogs = new ArrayList<>();
+
+    public static synchronized void addLog(Context context, String message) {
         String timestamp = dateFormat.format(new Date());
         String entry = "[" + timestamp + "] " + message;
-        
-        List<String> logs = getLogs(context);
-        logs.add(0, entry);
-        
-        if (logs.size() > MAX_LOGS) {
-            logs = logs.subList(0, MAX_LOGS);
+        pendingLogs.add(0, entry);
+
+        if (pendingLogs.size() >= BATCH_FLUSH_SIZE) {
+            flush(context);
         }
-        
+    }
+
+    public static synchronized void flush(Context context) {
+        if (pendingLogs.isEmpty()) return;
+
+        List<String> logs = getLogs(context);
+        logs.addAll(0, pendingLogs);
+        pendingLogs.clear();
+
+        if (logs.size() > MAX_LOGS) {
+            logs = new ArrayList<>(logs.subList(0, MAX_LOGS));
+        }
+
         PreferenceManager.getDefaultSharedPreferences(context)
                 .edit()
                 .putString(PREF_LOGS, gson.toJson(logs))
@@ -53,6 +68,9 @@ public class LogManager {
     }
 
     public static void clearLogs(Context context) {
+        synchronized (LogManager.class) {
+            pendingLogs.clear();
+        }
         PreferenceManager.getDefaultSharedPreferences(context).edit().remove(PREF_LOGS).apply();
     }
 

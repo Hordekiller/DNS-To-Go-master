@@ -5,6 +5,7 @@
     <string name="app_name">Star DNS Değiştirici</string>
     <string name="choose_dns_server">DNS Sunucusu Seçiniz..</string>
     <string name="custom_dns">Özel DNS Sunucusu</string>
+    <string name="use_custom_dns">Özel DNS kullan</string>
     <string name="enter_valid_dns">Lütfen geçerli bir DNS sunucusu giriniz.</string>
     <string name="send_feedback">Geri Bildirim Gönderin</string>
     <string name="send_mail">Mail Gönder</string>
@@ -21,4 +22,6 @@
     <string name="service_ready">DNS servisi hazır</string>
     <string name="dns_starting">DNS başlatılıyor.</string>
     <string name="general_settings">Genel Ayarlar</string>
+    <string name="disconnect">Bağlantıyı kes</string>
+    <string name="reconnect">Yeniden bağlan</string>
 </resources>

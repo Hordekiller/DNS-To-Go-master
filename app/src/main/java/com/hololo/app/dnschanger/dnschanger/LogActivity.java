@@ -14,21 +14,19 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.hololo.app.dnschanger.R;
 import com.hololo.app.dnschanger.utils.LogManager;
 import java.util.List;
-import butterknife.BindView;
-import butterknife.ButterKnife;
 
 public class LogActivity extends AppCompatActivity {
 
-    @BindView(R.id.toolbar)
-    Toolbar toolbar;
-    @BindView(R.id.logRecyclerView)
-    RecyclerView logRecyclerView;
+    private Toolbar toolbar;
+    private RecyclerView logRecyclerView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_log);
-        ButterKnife.bind(this);
+
+        toolbar = findViewById(R.id.toolbar);
+        logRecyclerView = findViewById(R.id.logRecyclerView);
 
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
@@ -91,9 +89,9 @@ public class LogActivity extends AppCompatActivity {
             String log = logs.get(position);
             holder.textView.setText(log);
             if (log.contains("BLOCKED")) {
-                holder.textView.setTextColor(0xFFFF4444); // Material Red
+                holder.textView.setTextColor(0xFFFF4444);
             } else if (log.contains("Cache")) {
-                holder.textView.setTextColor(0xFF00FFC2); // Accent Neon
+                holder.textView.setTextColor(0xFF00FFC2);
             } else {
                 holder.textView.setTextColor(0xFFFFFFFF);
             }

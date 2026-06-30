@@ -39,17 +39,11 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import butterknife.BindView;
-import butterknife.ButterKnife;
-
 public class AppFilterActivity extends AppCompatActivity {
 
-    @BindView(R.id.toolbar)
-    Toolbar toolbar;
-    @BindView(R.id.appRecyclerView)
-    RecyclerView appRecyclerView;
-    @BindView(R.id.progressBar)
-    ProgressBar progressBar;
+    private Toolbar toolbar;
+    private RecyclerView appRecyclerView;
+    private ProgressBar progressBar;
 
     private AppAdapter adapter;
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -60,7 +54,10 @@ public class AppFilterActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_app_filter);
-        ButterKnife.bind(this);
+
+        toolbar = findViewById(R.id.toolbar);
+        appRecyclerView = findViewById(R.id.appRecyclerView);
+        progressBar = findViewById(R.id.progressBar);
 
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
@@ -123,7 +120,6 @@ public class AppFilterActivity extends AppCompatActivity {
                 .putStringSet(PREF_SELECTED_APPS, selected)
                 .apply();
         
-        // If VPN is running, we might want to notify or restart
         checkAndNotifyRestart();
     }
 
@@ -131,9 +127,6 @@ public class AppFilterActivity extends AppCompatActivity {
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
         if (prefs.getBoolean("isStarted", false)) {
             Toast.makeText(this, R.string.apps_updated, Toast.LENGTH_SHORT).show();
-            // Optional: Auto-restart logic here
-            // RxBus.instanceOf().sendEvent(new StopEvent());
-            // Then start again from MainActivity or handle in Service
         }
     }
 

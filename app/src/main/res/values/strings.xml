@@ -9,6 +9,7 @@
     <string name="service_started">DNS service started</string>
     <string name="choose_dns_server">SELECT FASTEST SERVER</string>
     <string name="custom_dns">Custom DNS Server</string>
+    <string name="use_custom_dns">Use Custom DNS</string>
     <string name="about">About</string>
     <string name="tell_us_what_you_think">Tell us what you think</string>
     <string name="send_feedback">Send Feedback</string>
@@ -58,6 +59,8 @@
     <string name="finding_best">Finding best server...</string>
     <string name="connected_to">Connected to %1$s</string>
     <string name="dns_turbo_active">DNS Turbo Active</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="reconnect">Reconnect</string>
     <string name="about_us">About Us</string>
     <string name="tagline">Fast • Secure • Reliable</string>
     <string name="github">GitHub</string>

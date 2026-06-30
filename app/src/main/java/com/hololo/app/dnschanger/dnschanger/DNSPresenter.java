@@ -17,7 +17,7 @@ import javax.inject.Inject;
 
 import io.reactivex.disposables.Disposable;
 
-class DNSPresenter {
+public class DNSPresenter {
 
     static final int SERVICE_OPEN = 1;
     static final int SERVICE_CLOSE = 0;

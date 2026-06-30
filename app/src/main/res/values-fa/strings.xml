@@ -7,6 +7,7 @@
     <string name="service_started">حالت توربو فعال شد</string>
     <string name="choose_dns_server">انتخاب سریع‌ترین سرور</string>
     <string name="custom_dns">دی‌ان‌اس سفارشی</string>
+    <string name="use_custom_dns">استفاده از DNS سفارشی</string>
     <string name="about">درباره ما</string>
     <string name="tell_us_what_you_think">نظرات خود را با ما در میان بگذارید</string>
     <string name="send_feedback">ارسال بازخورد</string>
@@ -48,6 +49,8 @@
     <string name="finding_best">در حال یافتن بهترین سرور...</string>
     <string name="connected_to">متصل به %1$s</string>
     <string name="dns_turbo_active">استار دی‌ان‌اس فعال است</string>
+    <string name="disconnect">قطع اتصال</string>
+    <string name="reconnect">اتصال مجدد</string>
     <string name="about_us">درباره ما</string>
     <string name="tagline">سریع • امن • قابل اعتماد</string>
     <string name="github">گیت‌هاب</string>

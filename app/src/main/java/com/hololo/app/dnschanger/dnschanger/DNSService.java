@@ -11,12 +11,15 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.net.TrafficStats;
 import android.net.VpnService;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.ParcelFileDescriptor;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.NotificationCompat;
@@ -35,26 +38,29 @@ import com.hololo.app.dnschanger.utils.event.GetServiceInfo;
 import com.hololo.app.dnschanger.utils.event.ServiceInfo;
 import com.hololo.app.dnschanger.utils.event.StartEvent;
 import com.hololo.app.dnschanger.utils.event.StopEvent;
+import com.hololo.app.dnschanger.resolver.ProtectedSocketFactory;
+import com.hololo.app.dnschanger.resolver.DnsRouter;
+import com.hololo.app.dnschanger.resolver.ResolverConfig;
+import com.hololo.app.dnschanger.model.DnsServer;
+import com.hololo.app.dnschanger.model.DnsServerRepository;
+import com.hololo.app.dnschanger.model.DnsType;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.Socket;
-import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-import java.nio.channels.DatagramChannel;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.inject.Inject;
-import javax.net.SocketFactory;
 
 import io.reactivex.disposables.Disposable;
-import okhttp3.Call;
-import okhttp3.Callback;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -65,7 +71,20 @@ import timber.log.Timber;
 
 public class DNSService extends VpnService {
     public final static String DNS_MODEL = "DNSModelIntent";
+    public static final String ACTION_DISCONNECT = "com.hololo.app.dnschanger.action.DISCONNECT";
+    public static final String ACTION_RECONNECT = "com.hololo.app.dnschanger.action.RECONNECT";
     private static final String CHANNEL_ID = "dns_changer_channel";
+    private static final int NOTIF_ID = 1903;
+    private static final long STOP_JOIN_TIMEOUT_MS = 1500L;
+    private static final int DNS_HEADER_LENGTH = 12;
+    private static final int UDP_HEADER_LENGTH = 8;
+    private static final int IPV4_MIN_HEADER_LENGTH = 20;
+    private static final int IPV6_HEADER_LENGTH = 40;
+    private static final int RESOLVE_THREADS = 4;
+    private static final int UPSTREAM_MAX_RETRIES = 1;
+    private static final String FALLBACK_DOH_URL = "https://1.1.1.1/dns-query";
+    private static final String PREF_RESOLVER_FALLBACK_ENABLED = "resolver_fallback_enabled";
+    private static final String PREF_RESOLVER_MAX_RETRIES = "resolver_max_retries";
 
     @Inject
     RxBus rxBus;
@@ -75,6 +94,8 @@ public class DNSService extends VpnService {
     Gson gson;
 
     private volatile OkHttpClient okHttpClient;
+    private volatile ExecutorService resolveExecutor;
+    private volatile DnsRouter dnsRouter;
     private final BlockManager blockManager = new BlockManager();
     private final DNSCache dnsCache = new DNSCache();
     private StatsManager statsManager;
@@ -82,26 +103,35 @@ public class DNSService extends VpnService {
     private ConnectivityManager.NetworkCallback networkCallback;
     private long lastHandoverTime = 0;
 
-    private final VpnService.Builder builder = new VpnService.Builder();
     private ParcelFileDescriptor fileDescriptor;
     private FileOutputStream outputStream;
     private Thread mThread;
-    private volatile boolean shouldRun = true;
+    private final AtomicBoolean isRunning = new AtomicBoolean(false);
+    private final AtomicBoolean foregroundStarted = new AtomicBoolean(false);
     private volatile DNSModel dnsModel;
     private SharedPreferences preferences;
 
-    private long startRxBytes = 0;
-    private long startTxBytes = 0;
+    private final java.util.concurrent.atomic.AtomicLong downloadedBytes = new java.util.concurrent.atomic.AtomicLong(0);
+    private final java.util.concurrent.atomic.AtomicLong uploadedBytes = new java.util.concurrent.atomic.AtomicLong(0);
+    private long lastRxBytes = TrafficStats.UNSUPPORTED;
+    private long lastTxBytes = TrafficStats.UNSUPPORTED;
+    private static final long NOTIFICATION_INTERVAL_MS = 5000;
     private final Handler updateHandler = new Handler(Looper.getMainLooper());
     private final Runnable updateRunnable = new Runnable() {
         @Override
         public void run() {
-            if (shouldRun) {
+            if (isRunning.get()) {
                 showNotification();
-                updateHandler.postDelayed(this, 1000);
+                updateHandler.postDelayed(this, NOTIFICATION_INTERVAL_MS);
             }
         }
     };
+
+    private PendingIntent cachedDisconnectIntent;
+    private PendingIntent cachedReconnectIntent;
+    private PendingIntent cachedContentIntent;
+    private String cachedTrafficText = "";
+    private String cachedStatusText = "";
 
     private Disposable subscriber;
 
@@ -113,28 +143,22 @@ public class DNSService extends VpnService {
     }
 
     private void stopThisService() {
-        this.shouldRun = false;
-        updateHandler.removeCallbacks(updateRunnable);
-        stopSelf();
+        stopTunnel(true);
     }
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
-        this.shouldRun = false;
-        updateHandler.removeCallbacks(updateRunnable);
+        stopTunnel(false);
         if (connectivityManager != null && networkCallback != null) {
             connectivityManager.unregisterNetworkCallback(networkCallback);
-        }
-        if (preferences != null) {
-            preferences.edit().putBoolean("isStarted", false).apply();
-            preferences.edit().remove("dnsModel").apply();
+            networkCallback = null;
         }
         Timber.e("Servis kapandı.");
         if (subscriber != null) {
             subscriber.dispose();
+            subscriber = null;
         }
-        closeResources();
+        super.onDestroy();
     }
 
     @Override
@@ -144,25 +168,32 @@ public class DNSService extends VpnService {
         DNSChangerApp.getApplicationComponent().inject(this);
         statsManager = new StatsManager(this);
         connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
-        initOkHttp();
         registerNetworkCallback();
         subscribe();
     }
 
     private void registerNetworkCallback() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP && connectivityManager != null) {
             networkCallback = new ConnectivityManager.NetworkCallback() {
-                @Override
-                public void onAvailable(@NonNull Network network) {
-                    handleNetworkChange(network);
-                }
+            @Override
+            public void onAvailable(@NonNull Network network) {
+                handleNetworkChange(network);
+            }
 
-                @Override
-                public void onLost(@NonNull Network network) {
-                    handleNetworkChange(null);
-                }
-            };
-            connectivityManager.registerDefaultNetworkCallback(networkCallback);
+            @Override
+            public void onLost(@NonNull Network network) {
+                handleNetworkChange(null);
+            }
+        };
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                connectivityManager.registerDefaultNetworkCallback(networkCallback);
+            } else {
+                NetworkRequest request = new NetworkRequest.Builder()
+                        .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                        .build();
+                connectivityManager.registerNetworkCallback(request, networkCallback);
+            }
         }
     }
 
@@ -184,11 +215,36 @@ public class DNSService extends VpnService {
         rebindUpstream();
     }
 
-    private void rebindUpstream() {
-        if (okHttpClient != null) {
-            okHttpClient.connectionPool().evictAll();
+    private void bindCurrentUnderlyingNetwork() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1 && connectivityManager != null) {
+            Network activeNetwork = null;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                activeNetwork = connectivityManager.getActiveNetwork();
+            }
+            if (activeNetwork != null) {
+                setUnderlyingNetworks(new Network[]{activeNetwork});
+            } else {
+                setUnderlyingNetworks(null);
+            }
         }
-        initOkHttp();
+    }
+
+    private synchronized void rebindUpstream() {
+        OkHttpClient client = okHttpClient;
+        okHttpClient = null;
+        if (client != null) {
+            client.dispatcher().cancelAll();
+            client.connectionPool().evictAll();
+            client.dispatcher().executorService().shutdownNow();
+        }
+        if (dnsRouter != null) {
+            dnsRouter.close();
+            dnsRouter = null;
+        }
+        if (fileDescriptor != null) {
+            initOkHttp();
+            initDnsRouter();
+        }
         Timber.i("Upstream rebonded to new network");
     }
 
@@ -202,59 +258,28 @@ public class DNSService extends VpnService {
                 .build();
     }
 
-    private class ProtectedSocketFactory extends SocketFactory {
-        private final VpnService vpnService;
-
-        public ProtectedSocketFactory(VpnService vpnService) {
-            this.vpnService = vpnService;
+    private synchronized void initDnsRouter() {
+        if (okHttpClient != null) {
+            dnsRouter = new DnsRouter(okHttpClient, this, ResolverConfig.defaults());
         }
+    }
 
-        @Override
-        public Socket createSocket() throws IOException {
-            Socket socket = new Socket();
-            vpnService.protect(socket);
-            return socket;
-        }
-
-        @Override
-        public Socket createSocket(String host, int port) throws IOException {
-            Socket socket = new Socket();
-            vpnService.protect(socket);
-            socket.connect(new java.net.InetSocketAddress(host, port));
-            return socket;
-        }
-
-        @Override
-        public Socket createSocket(String host, int port, InetAddress localHost, int localPort) throws IOException {
-            Socket socket = new Socket();
-            vpnService.protect(socket);
-            socket.bind(new java.net.InetSocketAddress(localHost, localPort));
-            socket.connect(new java.net.InetSocketAddress(host, port));
-            return socket;
-        }
-
-        @Override
-        public Socket createSocket(InetAddress host, int port) throws IOException {
-            Socket socket = new Socket();
-            vpnService.protect(socket);
-            socket.connect(new java.net.InetSocketAddress(host, port));
-            return socket;
-        }
-
-        @Override
-        public Socket createSocket(InetAddress address, int port, InetAddress localAddress, int localPort) throws IOException {
-            Socket socket = new Socket();
-            vpnService.protect(socket);
-            socket.bind(new java.net.InetSocketAddress(localAddress, localPort));
-            socket.connect(new java.net.InetSocketAddress(address, port));
-            return socket;
+    private synchronized void initResolveExecutor() {
+        if (resolveExecutor == null || resolveExecutor.isShutdown()) {
+            resolveExecutor = Executors.newFixedThreadPool(RESOLVE_THREADS, runnable -> {
+                Thread thread = new Thread(runnable, "DNS Resolver");
+                thread.setDaemon(true);
+                return thread;
+            });
         }
     }
 
     private void subscribe() {
         subscriber = rxBus.getEvents().subscribe(o -> {
             if (o instanceof StopEvent) {
-                stopThisService();
+                if (isRunning.get()) {
+                    stopThisService();
+                }
             } else if (o instanceof GetServiceInfo) {
                 rxBus.sendEvent(new ServiceInfo(dnsModel));
             }
@@ -262,39 +287,101 @@ public class DNSService extends VpnService {
     }
 
     private void showNotification() {
+        Notification notification = buildNotification();
+        if (isRunning.get()) {
+            if (foregroundStarted.compareAndSet(false, true)) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    startForeground(NOTIF_ID, notification,
+                            android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+                } else {
+                    startForeground(NOTIF_ID, notification);
+                }
+            } else {
+                updateNotification(notification);
+            }
+        } else {
+            updateNotification(notification);
+        }
+    }
+
+    private Notification buildNotification() {
         NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "DNS Changer Service", NotificationManager.IMPORTANCE_LOW);
             manager.createNotificationChannel(channel);
         }
 
-        long currentRxBytes = TrafficStats.getUidRxBytes(android.os.Process.myUid());
-        long currentTxBytes = TrafficStats.getUidTxBytes(android.os.Process.myUid());
+        updateTrafficCounters();
 
-        String downUsage = formatBytes(currentRxBytes - startRxBytes);
-        String upUsage = formatBytes(currentTxBytes - startTxBytes);
+        String downUsage = formatBytes(downloadedBytes.get());
+        String upUsage = formatBytes(uploadedBytes.get());
 
-        String contentText = (dnsModel != null ? getString(R.string.connected_to, dnsModel.getName()) : getString(R.string.dns_turbo_active))
+        String status = isRunning.get()
+                ? (dnsModel != null ? getString(R.string.connected_to, dnsModel.getName()) : getString(R.string.dns_turbo_active))
+                : getString(R.string.disconnected);
+
+        String contentText = status
                 + " | ↓ " + downUsage + " ↑ " + upUsage;
 
-        Intent intent = new Intent(this, MainActivity.class);
-        PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+        if (cachedContentIntent == null) {
+            Intent intent = new Intent(this, MainActivity.class);
+            cachedContentIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+        }
+        if (cachedDisconnectIntent == null) {
+            cachedDisconnectIntent = PendingIntent.getService(
+                    this, 1,
+                    new Intent(this, DNSService.class).setAction(ACTION_DISCONNECT),
+                    PendingIntent.FLAG_IMMUTABLE
+            );
+        }
+        if (cachedReconnectIntent == null) {
+            cachedReconnectIntent = PendingIntent.getService(
+                    this, 2,
+                    new Intent(this, DNSService.class).setAction(ACTION_RECONNECT),
+                    PendingIntent.FLAG_IMMUTABLE
+            );
+        }
 
-        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
+        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, CHANNEL_ID)
                 .setContentTitle(getString(R.string.app_name))
                 .setContentText(contentText)
                 .setSmallIcon(R.drawable.dns_changer_ico_inverse)
-                .setContentIntent(pendingIntent)
-                .setOngoing(true)
-                .build();
+                .setContentIntent(cachedContentIntent)
+                .setOnlyAlertOnce(true)
+                .setOngoing(isRunning.get())
+                .addAction(R.drawable.ic_vpn_key_black_24dp, getString(R.string.disconnect), cachedDisconnectIntent)
+                .addAction(R.drawable.ic_vpn_key_black_24dp, getString(R.string.reconnect), cachedReconnectIntent);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            startForeground(1903, notification, 
-                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE | 
-                android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SYSTEM_EXEMPTED);
-        } else {
-            startForeground(1903, notification);
+        return notificationBuilder.build();
+    }
+
+    private void updateNotification(Notification notification) {
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (manager != null) {
+            manager.notify(NOTIF_ID, notification);
         }
+    }
+
+    private void updateTrafficCounters() {
+        long currentRxBytes = TrafficStats.getUidRxBytes(android.os.Process.myUid());
+        long currentTxBytes = TrafficStats.getUidTxBytes(android.os.Process.myUid());
+
+        if (currentRxBytes != TrafficStats.UNSUPPORTED && lastRxBytes != TrafficStats.UNSUPPORTED && currentRxBytes >= lastRxBytes) {
+            downloadedBytes.addAndGet(currentRxBytes - lastRxBytes);
+        }
+        if (currentTxBytes != TrafficStats.UNSUPPORTED && lastTxBytes != TrafficStats.UNSUPPORTED && currentTxBytes >= lastTxBytes) {
+            uploadedBytes.addAndGet(currentTxBytes - lastTxBytes);
+        }
+
+        lastRxBytes = currentRxBytes;
+        lastTxBytes = currentTxBytes;
+    }
+
+    private void resetTrafficCounters() {
+        downloadedBytes.set(0);
+        uploadedBytes.set(0);
+        lastRxBytes = TrafficStats.getUidRxBytes(android.os.Process.myUid());
+        lastTxBytes = TrafficStats.getUidTxBytes(android.os.Process.myUid());
     }
 
     private String formatBytes(long bytes) {
@@ -305,22 +392,144 @@ public class DNSService extends VpnService {
     }
 
     private void closeResources() {
-        shouldRun = false;
-        if (fileDescriptor != null) {
+        closeTunInterface();
+        closeOutputStream();
+    }
+
+    private void closeTunInterface() {
+        ParcelFileDescriptor descriptor = fileDescriptor;
+        fileDescriptor = null;
+        if (descriptor != null) {
             try {
-                fileDescriptor.close();
-                setFileDescriptor(null);
+                descriptor.close();
             } catch (IOException e) {
                 Timber.d(e);
             }
         }
-        if (outputStream != null) {
+    }
+
+    private void closeOutputStream() {
+        FileOutputStream stream = outputStream;
+        outputStream = null;
+        if (stream != null) {
             try {
-                outputStream.close();
-                outputStream = null;
+                stream.close();
             } catch (IOException e) {
                 Timber.d(e);
             }
+        }
+    }
+
+    private void closeAllResolvers() {
+        OkHttpClient client = okHttpClient;
+        okHttpClient = null;
+        if (client != null) {
+            client.dispatcher().cancelAll();
+            client.connectionPool().evictAll();
+            client.dispatcher().executorService().shutdownNow();
+        }
+
+        ExecutorService executor = resolveExecutor;
+        resolveExecutor = null;
+        if (executor != null) {
+            executor.shutdownNow();
+        }
+    }
+
+    private void markServiceStopped() {
+        if (preferences != null) {
+            preferences.edit()
+                    .putBoolean("isStarted", false)
+                    .remove("dnsModel")
+                    .apply();
+        }
+    }
+
+    private void removeForegroundNotification() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                stopForeground(Service.STOP_FOREGROUND_REMOVE);
+            } else {
+                stopForeground(true);
+            }
+            foregroundStarted.set(false);
+        } catch (Exception e) {
+            Timber.d(e, "Foreground notification already stopped");
+        }
+    }
+
+    private void handleDisconnectAction() {
+        Timber.i("Notification disconnect requested");
+        stopTunnel(true);
+        rxBus.sendEvent(new StopEvent());
+    }
+
+    private void handleReconnectAction() {
+        Timber.i("Notification reconnect requested");
+        DNSModel modelToRestart = dnsModel;
+        if (modelToRestart == null && preferences != null) {
+            String modelJSON = preferences.getString("dnsModel", "");
+            if (!modelJSON.isEmpty()) {
+                modelToRestart = gson.fromJson(modelJSON, DNSModel.class);
+            }
+        }
+
+        stopTunnel(false, true);
+        bindCurrentUnderlyingNetwork();
+        rebindUpstream();
+
+        if (modelToRestart != null) {
+            Intent restartIntent = new Intent(this, DNSService.class);
+            restartIntent.putExtra(DNS_MODEL, modelToRestart);
+            onStartCommand(restartIntent, 0, 0);
+        } else {
+            Timber.e("Reconnect requested without a saved DNS model");
+            stopSelf();
+        }
+    }
+
+    private void stopTunnel(boolean stopService) {
+        stopTunnel(stopService, false);
+    }
+
+    private void stopTunnel(boolean stopService, boolean keepDnsModel) {
+        // Stop order is important: close the TUN first so a blocking read() exits before join().
+        isRunning.set(false);
+        updateHandler.removeCallbacks(updateRunnable);
+        if (keepDnsModel) {
+            if (preferences != null) {
+                preferences.edit().putBoolean("isStarted", false).apply();
+            }
+        } else {
+            markServiceStopped();
+            dnsModel = null;
+        }
+        LogManager.flush(this);
+        if (statsManager != null) statsManager.persistNow(this);
+        closeTunInterface();
+
+        Thread tunnelThread = mThread;
+        if (tunnelThread != null) {
+            tunnelThread.interrupt();
+            if (tunnelThread != Thread.currentThread()) {
+                try {
+                    tunnelThread.join(STOP_JOIN_TIMEOUT_MS);
+                    if (tunnelThread.isAlive()) {
+                        Timber.w("Tunnel thread did not stop within %d ms", STOP_JOIN_TIMEOUT_MS);
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    Timber.w(e, "Interrupted while waiting for tunnel thread to stop");
+                }
+            }
+        }
+
+        closeOutputStream();
+        closeAllResolvers();
+        removeForegroundNotification();
+
+        if (stopService) {
+            stopSelf();
         }
     }
 
@@ -331,6 +540,15 @@ public class DNSService extends VpnService {
     @Override
     public int onStartCommand(final Intent paramIntent, int p1, int p2) {
         Timber.i("onStartCommand called");
+        String action = paramIntent != null ? paramIntent.getAction() : null;
+        if (ACTION_DISCONNECT.equals(action)) {
+            handleDisconnectAction();
+            return Service.START_NOT_STICKY;
+        } else if (ACTION_RECONNECT.equals(action)) {
+            handleReconnectAction();
+            return Service.START_NOT_STICKY;
+        }
+
         if (paramIntent != null) {
             dnsModel = paramIntent.getParcelableExtra(DNS_MODEL);
         }
@@ -341,6 +559,22 @@ public class DNSService extends VpnService {
                 dnsModel = gson.fromJson(modelJSON, DNSModel.class);
             }
         }
+
+        if (dnsModel == null) {
+            Timber.e("Cannot start DNS tunnel without a DNS model");
+            stopTunnel(true);
+            return Service.START_NOT_STICKY;
+        }
+
+        if (isRunning.get()) {
+            stopTunnel(false);
+        }
+
+        initResolveExecutor();
+
+        isRunning.set(true);
+        resetTrafficCounters();
+        bindCurrentUnderlyingNetwork();
 
         if (preferences != null) {
             preferences.edit().putBoolean("isStarted", true).apply();
@@ -353,38 +587,37 @@ public class DNSService extends VpnService {
 
         mThread = new Thread(() -> {
             try {
-                if (dnsModel == null) return;
-
                 String modelJSON = gson.toJson(dnsModel);
                 preferences.edit().putString("dnsModel", modelJSON).apply();
 
-                builder.setSession(DNSService.this.getText(R.string.app_name).toString())
+                VpnService.Builder tunnelBuilder = new VpnService.Builder();
+                tunnelBuilder.setSession(DNSService.this.getText(R.string.app_name).toString())
                         .addAddress("192.168.0.1", 24)
                         .addRoute("0.0.0.0", 0)
                         .addAddress("fd00:1::1", 128)
                         .addRoute("::", 0)
                         .addDnsServer(dnsModel.getFirstDns());
 
-                applyAppFilter(builder);
+                applyAppFilter(tunnelBuilder);
                 
                 Timber.i("Starting VPN with DNS: %s", dnsModel.getFirstDns());
 
                 if (dnsModel.getSecondDns() != null && !dnsModel.getSecondDns().isEmpty()) {
-                    builder.addDnsServer(dnsModel.getSecondDns());
+                    tunnelBuilder.addDnsServer(dnsModel.getSecondDns());
                     Timber.i("Secondary DNS added: %s", dnsModel.getSecondDns());
                 }
 
-                setFileDescriptor(builder.establish());
+                setFileDescriptor(tunnelBuilder.establish());
 
                 if (fileDescriptor == null) {
                     Timber.e("Failed to establish VPN");
                     stopThisService();
                     return;
                 }
+                Log.d("DNSDebug", "establish OK vpnRef=" + System.identityHashCode(DNSService.this));
+                initOkHttp();
 
-                // Initialize traffic counters after tunnel is established
-                startRxBytes = TrafficStats.getUidRxBytes(android.os.Process.myUid());
-                startTxBytes = TrafficStats.getUidTxBytes(android.os.Process.myUid());
+                resetTrafficCounters();
 
                 try (FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
                      FileOutputStream output = new FileOutputStream(fileDescriptor.getFileDescriptor())) {
@@ -392,32 +625,39 @@ public class DNSService extends VpnService {
                     outputStream = output;
                     ByteBuffer packet = ByteBuffer.allocate(32767);
 
-                    while (shouldRun) {
+                    // Exit condition must observe both app stop and thread interrupt; never use while(true).
+                    while (isRunning.get() && !Thread.currentThread().isInterrupted()) {
                         try {
                             int length = inputStream.read(packet.array());
-                            if (length > 0) {
+                            if (length < 0) {
+                                break;
+                            } else if (length > 0) {
                                 packet.limit(length);
                                 packet.rewind();
                                 handlePacket(packet, length);
                                 packet.clear();
                             }
                         } catch (Exception e) {
-                            if (shouldRun) Timber.e(e, "Error processing TUN packet");
+                            if (isRunning.get()) Timber.e(e, "Error processing TUN packet");
                         }
                     }
                 }
             } catch (Exception exception) {
-                if (shouldRun) Timber.e(exception);
+                if (isRunning.get()) Timber.e(exception);
             } finally {
+                isRunning.set(false);
                 closeResources();
+                if (Thread.currentThread() == mThread) {
+                    mThread = null;
+                }
             }
         }, "DNS Changer");
         mThread.start();
-        return Service.START_STICKY;
+        return Service.START_NOT_STICKY;
     }
 
     private void handlePacket(ByteBuffer packet, int length) {
-        if (length < 20) return;
+        if (length < IPV4_MIN_HEADER_LENGTH) return;
 
         int version = (packet.get(0) >> 4) & 0x0F;
         if (version == 4) {
@@ -429,49 +669,64 @@ public class DNSService extends VpnService {
 
     private void handleIPv4(ByteBuffer packet, int length) {
         int ihl = (packet.get(0) & 0x0F) * 4;
-        if (length < ihl + 8) return; // Need at least IP + UDP header
+        int totalLength = packet.getShort(2) & 0xFFFF;
+        if (ihl < IPV4_MIN_HEADER_LENGTH || ihl > length) return;
+        if (totalLength < ihl + UDP_HEADER_LENGTH || totalLength > length) return;
+        if (totalLength < ihl + UDP_HEADER_LENGTH) return; // bounds-check before UDP read
         
         byte protocol = packet.get(9);
         if (protocol == 17) { // UDP
+            int udpOffset = ihl;
+            if (udpOffset + UDP_HEADER_LENGTH > totalLength) return;
             int destPort = packet.getShort(ihl + 2) & 0xFFFF;
+            int udpLength = packet.getShort(ihl + 4) & 0xFFFF;
+            if (udpLength < UDP_HEADER_LENGTH || udpOffset + udpLength > totalLength) return;
             if (destPort == 53) {
-                parseDNS(packet, ihl + 8);
+                parseDNS(packet, ihl + UDP_HEADER_LENGTH, udpOffset + udpLength);
             }
         }
     }
 
     private void handleIPv6(ByteBuffer packet, int length) {
-        if (length < 40 + 8) return; // IPv6 Header (40) + UDP Header (8)
+        if (length < IPV6_HEADER_LENGTH + UDP_HEADER_LENGTH) return; // IPv6 Header + UDP Header
+        int payloadLength = packet.getShort(4) & 0xFFFF;
+        int packetLength = IPV6_HEADER_LENGTH + payloadLength;
+        if (payloadLength < UDP_HEADER_LENGTH || packetLength > length) return;
         byte nextHeader = packet.get(6);
         if (nextHeader == 17) { // UDP
-            int destPort = packet.getShort(42) & 0xFFFF;
+            int udpOffset = IPV6_HEADER_LENGTH;
+            int destPort = packet.getShort(udpOffset + 2) & 0xFFFF;
+            int udpLength = packet.getShort(udpOffset + 4) & 0xFFFF;
+            if (udpLength < UDP_HEADER_LENGTH || udpOffset + udpLength > packetLength) return;
             if (destPort == 53) {
-                parseDNS(packet, 48);
+                parseDNS(packet, udpOffset + UDP_HEADER_LENGTH, udpOffset + udpLength);
             }
         }
     }
 
-    private void parseDNS(ByteBuffer packet, int dnsOffset) {
-        if (packet.limit() < dnsOffset + 12) return; // DNS Header is 12 bytes
+    private void parseDNS(ByteBuffer packet, int dnsOffset, int dnsEnd) {
+        if (dnsOffset < 0 || dnsEnd > packet.limit() || dnsEnd - dnsOffset < DNS_HEADER_LENGTH) return; // DNS Header is 12 bytes
+        ByteBuffer dnsBuffer = packet.duplicate();
+        dnsBuffer.position(dnsOffset);
+        dnsBuffer.limit(dnsEnd);
         
-        packet.position(dnsOffset);
-        int transactionId = packet.getShort() & 0xFFFF;
-        packet.getShort(); // Flags
-        int qdCount = packet.getShort() & 0xFFFF;
+        int transactionId = dnsBuffer.getShort() & 0xFFFF;
+        dnsBuffer.getShort(); // Flags
+        int qdCount = dnsBuffer.getShort() & 0xFFFF;
 
-        if (qdCount > 0 && packet.remaining() > 0) {
+        if (qdCount > 0 && dnsBuffer.remaining() > 0) {
             // Position is already at dnsOffset + 6, we need to skip 6 more bytes to get to Question
             // QD (2) + AN (2) + NS (2) + AR (2) = 8 bytes after ID(2) and Flags(2).
             // Currently at Offset+6 (ID, Flags, QD). Next are AN, NS, AR (6 bytes).
-            if (packet.remaining() < 6) return;
-            packet.getShort(); // AN
-            packet.getShort(); // NS
-            packet.getShort(); // AR
+            if (dnsBuffer.remaining() < 6) return;
+            dnsBuffer.getShort(); // AN
+            dnsBuffer.getShort(); // NS
+            dnsBuffer.getShort(); // AR
             
-            String domain = parseDomainName(packet);
-            if (packet.remaining() >= 4) { // QTYPE (2) + QCLASS (2)
-                int type = packet.getShort() & 0xFFFF;
-                packet.getShort(); // QCLASS
+            String domain = parseDomainName(dnsBuffer);
+            if (dnsBuffer.remaining() >= 4) { // QTYPE (2) + QCLASS (2)
+                int type = dnsBuffer.getShort() & 0xFFFF;
+                dnsBuffer.getShort(); // QCLASS
                 
                 Timber.d("DNS Query: ID=%d, Domain=%s, Type=%d", transactionId, domain, type);
                 
@@ -495,89 +750,106 @@ public class DNSService extends VpnService {
                     return;
                 }
 
-                int currentPos = packet.position();
-                byte[] rawQuery = new byte[currentPos - dnsOffset];
-                packet.position(dnsOffset);
-                packet.get(rawQuery);
+                int rawQueryLength = dnsEnd - dnsOffset;
+                if (rawQueryLength <= 0) return;
+                byte[] rawQuery = new byte[rawQueryLength];
+                ByteBuffer rawQueryBuffer = packet.duplicate();
+                rawQueryBuffer.position(dnsOffset);
+                rawQueryBuffer.limit(dnsEnd);
+                rawQueryBuffer.get(rawQuery);
 
-                forwardToDoH(rawQuery, packet, dnsOffset, domain, type);
+                byte[] originalPacket = Arrays.copyOf(packet.array(), packet.limit());
+
+                submitResolve(rawQuery, originalPacket, dnsOffset, domain, type);
             }
         }
     }
 
-    private void forwardToDoH(byte[] rawQuery, ByteBuffer originalPacket, int dnsOffset, String domain, int type) {
-        forwardToDoHWithRetry(rawQuery, originalPacket, dnsOffset, domain, type, 0);
+    private void submitResolve(byte[] rawQuery, byte[] originalPacket, int dnsOffset, String domain, int type) {
+        ExecutorService executor = resolveExecutor;
+        if (executor == null || executor.isShutdown()) {
+            Timber.w("Resolve executor is not available");
+            return;
+        }
+        executor.execute(() -> forwardToDoH(rawQuery, originalPacket, dnsOffset, domain, type));
     }
 
-    private void forwardToDoHWithRetry(byte[] rawQuery, ByteBuffer originalPacket, int dnsOffset, String domain, int type, int retryCount) {
-        String dohUrl = (dnsModel != null && dnsModel.getFirstDns() != null && dnsModel.getFirstDns().startsWith("http")) 
-                ? dnsModel.getFirstDns() 
-                : "https://1.1.1.1/dns-query";
+    private void forwardToDoH(byte[] rawQuery, byte[] originalPacket, int dnsOffset, String domain, int type) {
+        String primaryUrl = getPrimaryDohUrl();
+        String[] upstreams = primaryUrl.equals(FALLBACK_DOH_URL) || !isResolverFallbackEnabled()
+                ? new String[]{primaryUrl}
+                : new String[]{primaryUrl, FALLBACK_DOH_URL};
+        int maxRetries = getResolverMaxRetries();
 
-        RequestBody body = RequestBody.create(rawQuery, MediaType.parse("application/dns-message"));
-        Request request = new Request.Builder()
-                .url(dohUrl)
-                .post(body)
-                .addHeader("Accept", "application/dns-message")
-                .header("Host", "cloudflare-dns.com") // Ensure Host header is correct if using IP URL
-                .build();
-
-        okHttpClient.newCall(request).enqueue(new Callback() {
-            @Override
-            public void onFailure(@NonNull Call call, @NonNull IOException e) {
-                if (retryCount < 2) {
-                    Timber.w("DoH Request failed (retry %d): %s", retryCount + 1, e.getMessage());
-                    forwardToDoHWithRetry(rawQuery, originalPacket, dnsOffset, domain, type, retryCount + 1);
-                } else {
-                    Timber.e(e, "DoH Request failed after retries");
-                }
-            }
-
-            @Override
-            public void onResponse(@NonNull Call call, @NonNull Response response) throws IOException {
-                try (ResponseBody responseBody = response.body()) {
-                    if (!response.isSuccessful() || responseBody == null) {
-                        Timber.e("DoH error: %s", response.code());
-                        return;
-                    }
-                    byte[] dnsResponse = responseBody.bytes();
-                    
+        // Sequential fallback strategy: try selected upstream first, then Cloudflare fallback with bounded retries.
+        for (String upstream : upstreams) {
+            for (int attempt = 0; attempt <= maxRetries; attempt++) {
+                try {
+                    byte[] dnsResponse = executeDoH(rawQuery, upstream);
                     LogManager.addLog(DNSService.this, domain + " | ALLOWED | Upstream");
 
                     // Check for Truncated flag (TC) - bit 9 in big-endian flags
                     if (dnsResponse.length >= 4 && (dnsResponse[2] & 0x02) != 0) {
-                        Timber.d("DoH response truncated, attempting TCP fallback for %s", domain);
-                        performTcpFallback(rawQuery, originalPacket, dnsOffset, domain, type);
-                        return;
+                        Timber.d("DoH response truncated for %s", domain);
                     }
 
-                    // Store in Cache
                     long ttl = extractMinTTL(dnsResponse);
                     dnsCache.put(domain, type, dnsResponse, ttl);
-                    
-                    handleDoHResponse(dnsResponse, originalPacket, dnsOffset);
+                    handleDoHResponse(dnsResponse, ByteBuffer.wrap(originalPacket), dnsOffset);
+                    return;
+                } catch (Exception e) {
+                    if (attempt == maxRetries) {
+                        Timber.e(e, "DoH Request failed for %s after retries", upstream);
+                    } else {
+                        Timber.w("DoH Request failed (retry %d) for %s: %s", attempt + 1, upstream, e.getMessage());
+                    }
                 }
             }
-        });
+        }
     }
 
-    private void performTcpFallback(byte[] rawQuery, ByteBuffer originalPacket, int dnsOffset, String domain, int type) {
-        new Thread(() -> {
-            try {
-                // For DoH, the response shouldn't typically be truncated as HTTP handles large payloads.
-                // However, if we were using traditional UDP upstream, we'd switch to TCP.
-                // In DoH context, if TC is set, it might mean the upstream itself is signaling truncation.
-                // We'll retry with a larger buffer or log it. 
-                // Note: Standard DoH servers (Cloudflare/Google) rarely return TC=1.
-                Timber.w("TCP Fallback triggered for %s, but DoH usually bypasses UDP limits.", domain);
-                
-                // If we really need to do "Raw TCP/853" or "TCP/53" fallback:
-                // For now, we'll treat it as a normal response to avoid complex state machines
-                // but we've added the detection hook as requested.
-            } catch (Exception e) {
-                Timber.e(e, "TCP Fallback failed");
+    private String getPrimaryDohUrl() {
+        return (dnsModel != null && dnsModel.getFirstDns() != null && dnsModel.getFirstDns().startsWith("http"))
+                ? dnsModel.getFirstDns()
+                : FALLBACK_DOH_URL;
+    }
+
+    private boolean isResolverFallbackEnabled() {
+        return preferences == null || preferences.getBoolean(PREF_RESOLVER_FALLBACK_ENABLED, true);
+    }
+
+    private int getResolverMaxRetries() {
+        int retries = preferences != null ? preferences.getInt(PREF_RESOLVER_MAX_RETRIES, UPSTREAM_MAX_RETRIES) : UPSTREAM_MAX_RETRIES;
+        return Math.max(0, Math.min(retries, 2));
+    }
+
+    private byte[] executeDoH(byte[] rawQuery, String dohUrl) throws IOException {
+        RequestBody body = RequestBody.create(rawQuery, MediaType.parse("application/dns-message"));
+        Request.Builder builder = new Request.Builder()
+                .url(dohUrl)
+                .post(body)
+                .addHeader("Accept", "application/dns-message");
+        // Extract host from URL for correct Host header
+        try {
+            java.net.URI uri = new java.net.URI(dohUrl);
+            String host = uri.getHost();
+            if (host != null) {
+                builder.header("Host", host);
             }
-        }).start();
+        } catch (Exception ignored) {}
+        Request request = builder.build();
+
+        OkHttpClient client = okHttpClient;
+        if (client == null) {
+            throw new IOException("OkHttp resolver is closed");
+        }
+        try (Response response = client.newCall(request).execute();
+             ResponseBody responseBody = response.body()) {
+            if (!response.isSuccessful() || responseBody == null) {
+                throw new IOException("DoH error: " + response.code());
+            }
+            return responseBody.bytes();
+        }
     }
 
     private long extractMinTTL(byte[] response) {
@@ -774,7 +1046,7 @@ public class DNSService extends VpnService {
     }
 
     private synchronized void writeToTun(byte[] data) {
-        if (outputStream != null && shouldRun) {
+        if (outputStream != null && isRunning.get()) {
             try {
                 outputStream.write(data);
                 outputStream.flush();

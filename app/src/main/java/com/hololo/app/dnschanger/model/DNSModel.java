@@ -24,6 +24,12 @@ public class DNSModel implements Parcelable {
     private String customName = "";
     @SerializedName("features")
     private List<String> features = new java.util.ArrayList<>();
+    @SerializedName("serverGroupId")
+    private String serverGroupId = "";
+    @SerializedName("bestProtocol")
+    private String bestProtocol = "";
+    @SerializedName("lastStatus")
+    private String lastStatus = "";
 
     private long lastPing = -1;
 
@@ -57,6 +63,15 @@ public class DNSModel implements Parcelable {
     public List<String> getFeatures() { return features; }
     public void setFeatures(List<String> features) { this.features = features; }
 
+    public String getServerGroupId() { return serverGroupId; }
+    public void setServerGroupId(String serverGroupId) { this.serverGroupId = serverGroupId; }
+
+    public String getBestProtocol() { return bestProtocol; }
+    public void setBestProtocol(String bestProtocol) { this.bestProtocol = bestProtocol; }
+
+    public String getLastStatus() { return lastStatus; }
+    public void setLastStatus(String lastStatus) { this.lastStatus = lastStatus; }
+
     public DNSModel() {}
 
     @Override
@@ -73,6 +88,9 @@ public class DNSModel implements Parcelable {
         dest.writeString(this.customName);
         dest.writeLong(this.lastPing);
         dest.writeStringList(this.features);
+        dest.writeString(this.serverGroupId);
+        dest.writeString(this.bestProtocol);
+        dest.writeString(this.lastStatus);
     }
 
     protected DNSModel(Parcel in) {
@@ -85,6 +103,9 @@ public class DNSModel implements Parcelable {
         this.customName = in.readString();
         this.lastPing = in.readLong();
         this.features = in.createStringArrayList();
+        this.serverGroupId = in.readString();
+        this.bestProtocol = in.readString();
+        this.lastStatus = in.readString();
     }
 
     public static final Creator<DNSModel> CREATOR = new Creator<DNSModel>() {

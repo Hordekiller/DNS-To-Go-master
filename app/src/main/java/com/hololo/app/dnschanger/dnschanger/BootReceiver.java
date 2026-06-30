@@ -7,7 +7,8 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.preference.PreferenceManager;
+
+import androidx.preference.PreferenceManager;
 import androidx.core.app.NotificationCompat;
 
 import com.hololo.app.dnschanger.R;
@@ -37,7 +38,12 @@ public class BootReceiver extends BroadcastReceiver {
 
         intentAction.putExtra("dnsModel", dnsModel);
 
-        PendingIntent pendingIntent = PendingIntent.getActivity(context, 1, intentAction, PendingIntent.FLAG_ONE_SHOT);
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                context,
+                1,
+                intentAction,
+                PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE
+        );
 
         notificationBuilder = new NotificationCompat.Builder(context)
                 .setSmallIcon(R.drawable.dns_changer_ico_inverse)
