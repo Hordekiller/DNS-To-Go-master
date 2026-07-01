@@ -9,3 +9,7 @@
 .externalNativeBuild
 ./idea
 keystore.properties
+*.jks
+*.apk
+*.aab
+app/build/
