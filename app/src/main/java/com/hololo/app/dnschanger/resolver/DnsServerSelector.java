@@ -190,6 +190,11 @@ public class DnsServerSelector {
         return builder.toString();
     }
 
+    public void close() {
+        probeClient.dispatcher().executorService().shutdownNow();
+        probeClient.connectionPool().evictAll();
+    }
+
     private static String protocolLabel(DnsType type) {
         if (type == DnsType.DOH) {
             return "DoH";

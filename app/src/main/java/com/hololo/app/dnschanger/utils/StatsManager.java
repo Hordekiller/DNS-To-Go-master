@@ -56,8 +56,8 @@ public class StatsManager {
     }
 
     private void maybePersist(Context context) {
-        int count = persistCounter.incrementAndGet();
-        if (count % PERSIST_INTERVAL != 0) return;
+        int count = persistCounter.updateAndGet(v -> (v + 1) % PERSIST_INTERVAL);
+        if (count != 0) return;
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
         prefs.edit()

@@ -5,13 +5,12 @@ import android.net.VpnService;
 import com.hololo.app.dnschanger.model.DnsServer;
 import com.hololo.app.dnschanger.model.DnsType;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import okhttp3.OkHttpClient;
 
 public class DnsRouter {
-    private final Map<String, DnsResolver> resolverMap = new HashMap<>();
+    private final java.util.Map<String, DnsResolver> resolverMap = new ConcurrentHashMap<>();
     private final OkHttpClient client;
     private final VpnService vpnService;
     private final ResolverConfig config;

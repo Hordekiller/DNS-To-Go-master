@@ -15,9 +15,6 @@ import com.hololo.app.dnschanger.R;
 
 
 public class BootReceiver extends BroadcastReceiver {
-    private NotificationManager notificationManager;
-    private NotificationCompat.Builder notificationBuilder;
-
     @Override
     public void onReceive(Context context, Intent intent) {
         if (intent.getAction().equals(Intent.ACTION_BOOT_COMPLETED)) {
@@ -27,7 +24,6 @@ public class BootReceiver extends BroadcastReceiver {
             String dnsModelJSON = preferences.getString("dnsModel", "");
 
             if (autoStart && isStarted && !dnsModelJSON.isEmpty()) {
-                notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
                 sendNotification(context, dnsModelJSON);
             }
         }
@@ -45,16 +41,15 @@ public class BootReceiver extends BroadcastReceiver {
                 PendingIntent.FLAG_ONE_SHOT | PendingIntent.FLAG_IMMUTABLE
         );
 
-        notificationBuilder = new NotificationCompat.Builder(context)
+        Notification notification = new NotificationCompat.Builder(context)
                 .setSmallIcon(R.drawable.dns_changer_ico_inverse)
                 .setContentTitle(context.getString(R.string.service_ready))
                 .setContentIntent(pendingIntent)
                 .addAction(R.drawable.ic_vpn_key_black_24dp, context.getString(R.string.turn_on), pendingIntent)
-                .setAutoCancel(true);
+                .setAutoCancel(true)
+                .build();
 
-        Notification notification = notificationBuilder.build();
-
+        NotificationManager notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.notify(1903, notification);
-
     }
 }

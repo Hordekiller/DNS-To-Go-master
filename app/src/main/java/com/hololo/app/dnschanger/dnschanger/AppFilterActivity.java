@@ -142,7 +142,7 @@ public class AppFilterActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        executor.shutdown();
+        executor.shutdownNow();
     }
 
     static class AppInfo {

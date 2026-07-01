@@ -32,7 +32,7 @@ public class DotResolver implements DnsResolver {
     }
 
     @Override
-    public byte[] query(byte[] rawQuery) throws Exception {
+    public synchronized byte[] query(byte[] rawQuery) throws Exception {
         if (socket == null || socket.isClosed()) {
             connect();
         }

@@ -25,6 +25,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -189,9 +191,11 @@ private fun DnsServerCard(
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
+                val localPingMs = androidx.compose.runtime.remember { androidx.compose.runtime.mutableStateOf(-1L) }
+                val displayMs = if (localPingMs.value >= 0) localPingMs.value else item.pingMs
                 Text(
-                    text = if (item.pingMs >= 0) "${item.pingMs} ms" else "-- ms",
-                    color = if (item.pingMs >= 0 && item.pingMs < 100)
+                    text = if (displayMs >= 0) "$displayMs ms" else "-- ms",
+                    color = if (displayMs >= 0 && displayMs < 100)
                         MaterialTheme.colorScheme.primary
                     else
                         MaterialTheme.colorScheme.onSurfaceVariant,
@@ -201,7 +205,7 @@ private fun DnsServerCard(
                 )
 
                 TextButton(
-                    onClick = { onTest { result -> } },
+                    onClick = { onTest { result -> localPingMs.value = result } },
                     colors = ButtonDefaults.textButtonColors(
                         contentColor = MaterialTheme.colorScheme.secondary,
                     ),

@@ -69,11 +69,12 @@ fun MainScreen(
     onSelectServerClick: () -> Unit,
     onPrimaryDnsChange: (String) -> Unit,
     onSecondaryDnsChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val scrollState = rememberScrollState()
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .verticalScroll(scrollState)

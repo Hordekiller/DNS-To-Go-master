@@ -1,12 +1,12 @@
 package com.hololo.app.dnschanger.utils;
 
 import java.io.InputStream;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import timber.log.Timber;
 
 public class BlockManager {
-    private final Set<String> blockedDomains = new HashSet<>();
+    private final Set<String> blockedDomains = ConcurrentHashMap.newKeySet();
 
     public BlockManager() {
         // Default blocked domains (Example: known trackers/ads)
