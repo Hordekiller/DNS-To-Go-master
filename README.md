@@ -16,7 +16,15 @@ Dns To Go is a professional, high-performance DNS optimization and security tool
 
 ## 🚀 Release History
 
-### 🌟 Version 2.5.0 (Latest Release)
+### 🌟 Version 2.6.5 (Latest Release)
+- **Security Hardening:** DoT hostname verification + DoH certificate pinning via ResolverConfig.
+- **Performance:** Parallelized TUN packet processing with ring-buffer object pool & dynamic thread pool.
+- **Privacy:** EDNS0 padding (RFC 7830) to prevent size-based traffic fingerprinting.
+- **Bug Fix:** Non-DNS traffic no longer blocked — only DNS server IPs routed through TUN.
+- **Bug Fix:** Notification no longer restarts UI (launchMode singleTop + intent flags).
+- **Refactor:** Split large files (DNSService, MainActivity, MainScreen) into focused modules.
+
+### 🌟 Version 2.5.0
 - **Engine Overhaul:** Fully modernized `VpnService` implementation for Android 14 compatibility.
 - **Statistics Dashboard:** New UI section for real-time traffic insights (Total, Blocked, %).
 - **Professional Logs:** Structured logging with source identification (Cache, Upstream, Blocked) and CSV export.
