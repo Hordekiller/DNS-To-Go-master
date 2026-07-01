@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.OkHttpClient;
+import timber.log.Timber;
 
 public class DnsServerSelector {
     private static final String TEST_DOMAIN = "google.com";
@@ -29,12 +30,17 @@ public class DnsServerSelector {
     public DnsServerSelector(VpnService vpnService, ResolverConfig config) {
         this.vpnService = vpnService;
         this.config = config;
-        this.probeClient = new OkHttpClient.Builder()
+        OkHttpClient.Builder probeBuilder = new OkHttpClient.Builder()
                 .connectTimeout(5, TimeUnit.SECONDS)
                 .readTimeout(5, TimeUnit.SECONDS)
                 .writeTimeout(5, TimeUnit.SECONDS)
-                .retryOnConnectionFailure(true)
-                .build();
+                .retryOnConnectionFailure(true);
+
+        if (vpnService != null) {
+            probeBuilder.socketFactory(new ProtectedSocketFactory(vpnService));
+            Timber.i("DnsServerSelector: probe client wrapped with ProtectedSocketFactory");
+        }
+        this.probeClient = probeBuilder.build();
     }
 
     public Selection select(DNSModel model) {

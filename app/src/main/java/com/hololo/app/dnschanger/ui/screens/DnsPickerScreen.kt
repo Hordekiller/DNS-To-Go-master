@@ -30,6 +30,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import com.hololo.app.dnschanger.R
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -69,14 +71,14 @@ fun DnsPickerContent(
         Spacer(Modifier.height(16.dp))
 
         Text(
-            text = "DNS Servers",
+            text = stringResource(R.string.dns_servers),
             color = MaterialTheme.colorScheme.onSurface,
             fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
         )
 
         Text(
-            text = "Choose a server to optimize your connection",
+            text = stringResource(R.string.choose_server_desc),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 12.sp,
         )
@@ -216,7 +218,7 @@ private fun DnsServerCard(
                         modifier = Modifier.size(12.dp),
                     )
                     Spacer(Modifier.width(4.dp))
-                    Text("TEST", fontSize = 11.sp)
+                    Text(stringResource(R.string.test), fontSize = 11.sp)
                 }
             }
         }

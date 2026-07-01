@@ -78,4 +78,20 @@
     <string name="per_app_routing" translatable="false">Per-app Routing</string>
     <string name="apps_updated" translatable="false">App list updated. VPN will restart if active.</string>
     <string name="copyright">© 2026 Dns To Go. All rights reserved.</string>
+    <string name="home">Home</string>
+    <string name="dns_logs">DNS Logs</string>
+    <string name="app_filter">App Filter</string>
+    <string name="dark_mode">Dark Mode</string>
+    <string name="light_mode">Light Mode</string>
+    <string name="no_dns_logs">No DNS logs yet</string>
+    <string name="dns_servers">DNS Servers</string>
+    <string name="choose_server_desc">Choose a server to optimize your connection</string>
+    <string name="back">Back</string>
+    <string name="tap_to_start">Tap to Start DNS</string>
+    <string name="dns_changer_title">DNS Changer</string>
+    <string name="menu">Menu</string>
+    <string name="export_csv">Export CSV</string>
+    <string name="blocked_label">BLOCKED</string>
+    <string name="block_rate">BLOCK RATE</string>
+    <string name="tab_logs">Logs</string>
 </resources>

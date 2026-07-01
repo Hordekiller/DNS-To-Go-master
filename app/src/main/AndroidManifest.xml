@@ -27,6 +27,7 @@
         <activity
             android:name=".dnschanger.MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -42,8 +43,9 @@
             <intent-filter>
                 <action android:name="android.net.VpnService" />
             </intent-filter>
-            <property android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
-                android:value="VPN and DNS Changing service to optimize network performance and bypass restrictions." />
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="DNS and VPN tunnel service that filters and routes DNS queries to a selected upstream resolver." />
         </service>
 
         <activity

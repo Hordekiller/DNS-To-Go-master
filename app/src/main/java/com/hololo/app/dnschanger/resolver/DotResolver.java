@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Collections;
 
+import timber.log.Timber;
+
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 
@@ -18,17 +20,23 @@ public class DotResolver implements DnsResolver {
     private final String ip;
     private final int port;
     private final VpnService vpnService;
+    private final int timeoutMs;
     private SSLSocket socket;
 
     public DotResolver(DnsServer server) {
-        this(server, null);
+        this(server, null, 5000);
     }
 
     public DotResolver(DnsServer server, VpnService vpnService) {
+        this(server, vpnService, 5000);
+    }
+
+    public DotResolver(DnsServer server, VpnService vpnService, int timeoutMs) {
         this.ip = server.getBootstrapIp() != null ? server.getBootstrapIp() : server.getPrimaryIp();
         this.port = server.getPort();
         this.hostname = server.getHostname();
         this.vpnService = vpnService;
+        this.timeoutMs = timeoutMs;
     }
 
     @Override
@@ -58,19 +66,35 @@ public class DotResolver implements DnsResolver {
         SSLSocketFactory factory = (SSLSocketFactory) SSLSocketFactory.getDefault();
         SSLSocket sock = (SSLSocket) factory.createSocket();
 
-        if (vpnService != null && !vpnService.protect(sock)) {
-            sock.close();
-            throw new IOException("VpnService.protect(DoT socket) failed");
+        if (vpnService != null) {
+            sock.bind(new InetSocketAddress(0));
+            if (!vpnService.protect(sock)) {
+                sock.close();
+                throw new IOException("VpnService.protect(DoT socket) failed");
+            }
+            Timber.d("DoT resolver socket protected and bound");
         }
 
-        sock.connect(new InetSocketAddress(ip, port), 5000);
-        sock.setSoTimeout(5000);
+        sock.connect(new InetSocketAddress(ip, port), timeoutMs);
+        sock.setSoTimeout(timeoutMs);
+
         if (hostname != null && !hostname.isEmpty() && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
             javax.net.ssl.SSLParameters params = sock.getSSLParameters();
             params.setServerNames(Collections.singletonList(new javax.net.ssl.SNIHostName(hostname)));
+            params.setEndpointIdentificationAlgorithm("HTTPS");
             sock.setSSLParameters(params);
         }
+
         sock.startHandshake();
+
+        if (hostname != null && !hostname.isEmpty() && android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.N) {
+            javax.net.ssl.HostnameVerifier verifier = javax.net.ssl.HttpsURLConnection.getDefaultHostnameVerifier();
+            if (!verifier.verify(hostname, sock.getSession())) {
+                sock.close();
+                throw new javax.net.ssl.SSLException("DoT hostname verification failed for " + hostname);
+            }
+        }
+
         this.socket = sock;
     }
 

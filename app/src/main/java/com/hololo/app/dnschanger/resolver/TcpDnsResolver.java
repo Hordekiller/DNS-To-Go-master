@@ -10,20 +10,28 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
+import timber.log.Timber;
+
 public class TcpDnsResolver implements DnsResolver {
     private final String ip;
     private final int port;
     private final VpnService vpnService;
+    private final int timeoutMs;
     private Socket socket;
 
     public TcpDnsResolver(DnsServer server) {
-        this(server, null);
+        this(server, null, 5000);
     }
 
     public TcpDnsResolver(DnsServer server, VpnService vpnService) {
-        this.ip = server.getPrimaryIp();
+        this(server, vpnService, 5000);
+    }
+
+    public TcpDnsResolver(DnsServer server, VpnService vpnService, int timeoutMs) {
+        this.ip = server.getBootstrapIp() != null ? server.getBootstrapIp() : server.getPrimaryIp();
         this.port = server.getPort();
         this.vpnService = vpnService;
+        this.timeoutMs = timeoutMs;
     }
 
     @Override
@@ -51,12 +59,16 @@ public class TcpDnsResolver implements DnsResolver {
 
     private void connect() throws IOException {
         Socket sock = new Socket();
-        if (vpnService != null && !vpnService.protect(sock)) {
-            sock.close();
-            throw new IOException("VpnService.protect(TCP socket) failed");
+        if (vpnService != null) {
+            sock.bind(new InetSocketAddress(0));
+            if (!vpnService.protect(sock)) {
+                sock.close();
+                throw new IOException("VpnService.protect(TCP socket) failed");
+            }
+            Timber.d("TCP resolver socket protected and bound");
         }
-        sock.connect(new InetSocketAddress(ip, port), 5000);
-        sock.setSoTimeout(5000);
+        sock.connect(new InetSocketAddress(ip, port), timeoutMs);
+        sock.setSoTimeout(timeoutMs);
         this.socket = sock;
     }
 

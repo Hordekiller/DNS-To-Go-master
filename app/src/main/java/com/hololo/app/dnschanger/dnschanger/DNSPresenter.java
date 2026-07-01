@@ -37,15 +37,20 @@ public class DNSPresenter {
     }
 
     private void subscribe() {
-        subscriber = rxBus.getEvents().subscribe(o -> {
-            if (o instanceof StartEvent) {
-                view.changeStatus(SERVICE_OPEN);
-            } else if (o instanceof StopEvent) {
-                view.changeStatus(SERVICE_CLOSE);
-            } else if (o instanceof ServiceInfo serviceInfo) {
-                view.setServiceInfo(serviceInfo.getModel());
+        subscriber = rxBus.getEvents().subscribe(
+            o -> {
+                if (o instanceof StartEvent) {
+                    view.changeStatus(SERVICE_OPEN);
+                } else if (o instanceof StopEvent) {
+                    view.changeStatus(SERVICE_CLOSE);
+                } else if (o instanceof ServiceInfo serviceInfo) {
+                    view.setServiceInfo(serviceInfo.getModel());
+                }
+            },
+            throwable -> {
+                android.util.Log.e("DNSPresenter", "Error in RxBus subscription", throwable);
             }
-        });
+        );
     }
 
     void onDestroy() {

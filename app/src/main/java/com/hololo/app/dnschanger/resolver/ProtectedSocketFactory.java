@@ -4,6 +4,7 @@ import android.net.VpnService;
 import android.util.Log;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -49,6 +50,9 @@ public class ProtectedSocketFactory extends SocketFactory {
                 if (vpnService == null) {
                     throw new IOException("VpnService reference is null");
                 }
+
+                // Must bind before protect() because new Socket() has no file descriptor
+                socket.bind(new InetSocketAddress(0));
 
                 boolean ok = vpnService.protect(socket);
                 Log.d("DNSDebug", "protect " + attemptLabel

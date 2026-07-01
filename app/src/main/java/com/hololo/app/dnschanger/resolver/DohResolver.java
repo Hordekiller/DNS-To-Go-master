@@ -4,6 +4,7 @@ import com.hololo.app.dnschanger.model.DnsServer;
 
 import java.io.IOException;
 
+import okhttp3.CertificatePinner;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -17,8 +18,18 @@ public class DohResolver implements DnsResolver {
     private static final MediaType DNS_MESSAGE = MediaType.parse("application/dns-message");
 
     public DohResolver(DnsServer server, OkHttpClient client) {
+        this(server, client, null);
+    }
+
+    public DohResolver(DnsServer server, OkHttpClient client, CertificatePinner pinner) {
         this.url = server.getDohUrl() != null ? server.getDohUrl() : "https://" + server.getHostname() + "/dns-query";
-        this.client = client;
+        if (pinner != null) {
+            this.client = client.newBuilder()
+                    .certificatePinner(pinner)
+                    .build();
+        } else {
+            this.client = client;
+        }
     }
 
     @Override

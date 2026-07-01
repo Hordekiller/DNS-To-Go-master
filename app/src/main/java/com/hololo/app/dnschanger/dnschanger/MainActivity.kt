@@ -1,85 +1,52 @@
 package com.hololo.app.dnschanger.dnschanger
 
 import android.Manifest
+import android.app.ActivityManager
+import android.app.AlertDialog
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.net.VpnService
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.HelpCenter
-import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.PhoneAndroid
-import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.NavigationDrawerItemDefaults
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
 import androidx.core.app.ActivityCompat
 import com.google.gson.Gson
 import com.hololo.app.dnschanger.DNSChangerApp
@@ -88,11 +55,13 @@ import com.hololo.app.dnschanger.about.AboutActivity
 import com.hololo.app.dnschanger.model.DNSModel
 import com.hololo.app.dnschanger.model.DnsServerRepository
 import com.hololo.app.dnschanger.model.DnsType
-import com.hololo.app.dnschanger.ui.screens.DnsPickerContent
-import com.hololo.app.dnschanger.ui.screens.DnsPickerItem
+import com.hololo.app.dnschanger.ui.screens.DnsPickerDialog
+import com.hololo.app.dnschanger.ui.screens.DrawerContent
+import com.hololo.app.dnschanger.ui.screens.DrawerItem
 import com.hololo.app.dnschanger.ui.screens.MainScreen
 import com.hololo.app.dnschanger.ui.screens.MainUiState
 import com.hololo.app.dnschanger.ui.theme.DnsChangerTheme
+import com.hololo.app.dnschanger.utils.RateManager
 import com.hololo.app.dnschanger.utils.event.StatsUpdateEvent
 import com.hololo.app.dnschanger.utils.locale.LocaleHelper
 import com.hololo.app.dnschanger.settings.SettingsActivity
@@ -118,7 +87,8 @@ class MainActivity : AppCompatActivity(), IDNSView {
     private var showDnsPicker by mutableStateOf(false)
     private var darkTheme by mutableStateOf(true)
     private val pingHandler = Handler(Looper.getMainLooper())
-    private val pingExecutor = java.util.concurrent.Executors.newSingleThreadScheduledExecutor()
+    private var pingExecutor: java.util.concurrent.ScheduledExecutorService? =
+        java.util.concurrent.Executors.newSingleThreadScheduledExecutor()
     private var pingActive = false
 
     private val vpnLauncher = registerForActivityResult(
@@ -131,6 +101,45 @@ class MainActivity : AppCompatActivity(), IDNSView {
         } else {
             pendingVpnModel = null
             showToast(getString(R.string.enter_valid_dns))
+        }
+    }
+
+    private val permissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val allGranted = permissions.all { it.value }
+
+        if (allGranted) {
+            Timber.d("All permissions granted ✓")
+            showToast("Permissions granted - You can now start VPN")
+            pendingVpnModel?.let { model ->
+                pendingVpnModel = null
+                startDNS(model)
+            }
+        } else {
+            Timber.w("Some permissions denied")
+
+            val deniedPermissions = permissions.filter { !it.value }.keys
+            Timber.w("Denied permissions: $deniedPermissions")
+
+            showPermissionRationaleDialog(deniedPermissions.toList())
+        }
+    }
+
+    private fun startDNS(model: DNSModel) {
+        if (presenter.isWorking) {
+            presenter.stopService()
+            return
+        }
+
+        val intent = VpnService.prepare(this)
+        if (intent != null) {
+            Timber.d("VPN not yet authorized — Requesting user consent")
+            pendingVpnModel = model
+            vpnLauncher.launch(intent)
+        } else {
+            Timber.d("VPN already authorized — Starting service directly")
+            presenter.startService(model)
         }
     }
 
@@ -147,6 +156,26 @@ class MainActivity : AppCompatActivity(), IDNSView {
         darkTheme = preferences?.getBoolean("dark_theme", true) ?: true
         setContent { AppContent() }
         getServiceStatus()
+        showMyketRating()
+    }
+
+    private fun showMyketRating() {
+        if (!RateManager.shouldShow(this)) return
+        AlertDialog.Builder(this)
+            .setTitle("DNS To Go")
+            .setMessage("اگر از برنامه راضی هستید لطفا به ما در مایکت امتیاز دهید")
+            .setPositiveButton("امتیاز می‌دهم") { _, _ ->
+                val intent = Intent(
+                    Intent.ACTION_VIEW,
+                    Uri.parse("myket://comment?id=com.hololo.app.dnschanger")
+                )
+                startActivity(intent)
+                RateManager.markShown(this)
+            }
+            .setNegativeButton("بعدا") { _, _ ->
+                RateManager.markShown(this)
+            }
+            .show()
     }
 
     private val preferences by lazy {
@@ -181,10 +210,10 @@ class MainActivity : AppCompatActivity(), IDNSView {
                 Scaffold(
                     topBar = {
                         TopAppBar(
-                            title = { Text("DNS Changer") },
+                            title = { Text(stringResource(R.string.dns_changer_title)) },
                             navigationIcon = {
                                 IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                    Icon(Icons.Default.Menu, contentDescription = "Menu")
+                                    Icon(Icons.Default.Menu, contentDescription = stringResource(R.string.menu))
                                 }
                             },
                             colors = TopAppBarDefaults.topAppBarColors(
@@ -197,13 +226,13 @@ class MainActivity : AppCompatActivity(), IDNSView {
                         NavigationBar {
                             NavigationBarItem(
                                 icon = { Icon(Icons.Default.Home, null) },
-                                label = { Text("Home") },
+                                label = { Text(stringResource(R.string.home)) },
                                 selected = selectedTab == 0,
                                 onClick = { selectedTab = 0 }
                             )
                             NavigationBarItem(
                                 icon = { Icon(Icons.AutoMirrored.Filled.List, null) },
-                                label = { Text("Logs") },
+                                label = { Text(stringResource(R.string.tab_logs)) },
                                 selected = selectedTab == 1,
                                 onClick = {
                                     selectedTab = 1
@@ -212,7 +241,7 @@ class MainActivity : AppCompatActivity(), IDNSView {
                             )
                             NavigationBarItem(
                                 icon = { Icon(Icons.Default.Settings, null) },
-                                label = { Text("Settings") },
+                                label = { Text(stringResource(R.string.settings)) },
                                 selected = selectedTab == 2,
                                 onClick = {
                                     selectedTab = 2
@@ -253,95 +282,6 @@ class MainActivity : AppCompatActivity(), IDNSView {
         }
     }
 
-    @Composable
-    private fun DrawerContent(
-        currentServerName: String,
-        isDarkTheme: Boolean,
-        onToggleTheme: () -> Unit,
-        onNavigate: (DrawerItem) -> Unit,
-    ) {
-        ModalDrawerSheet {
-            Spacer(Modifier.height(24.dp))
-            Text(
-                text = "DNS Changer",
-                modifier = Modifier.padding(horizontal = 28.dp, vertical = 8.dp),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            Text(
-                text = currentServerName,
-                modifier = Modifier.padding(horizontal = 28.dp),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(8.dp))
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp))
-            Spacer(Modifier.height(8.dp))
-
-            val selectedItem = remember { mutableStateOf(DrawerItem.HOME) }
-            val items = listOf(
-                DrawerItem.HOME,
-                DrawerItem.LOGS,
-                DrawerItem.SETTINGS,
-                DrawerItem.APPS,
-                DrawerItem.ABOUT,
-            )
-            items.forEach { item ->
-                NavigationDrawerItem(
-                    icon = { Icon(item.icon, null) },
-                    label = { Text(item.label) },
-                    selected = selectedItem.value == item,
-                    onClick = {
-                        selectedItem.value = item
-                        onNavigate(item)
-                    },
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                    colors = NavigationDrawerItemDefaults.colors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
-                    )
-                )
-            }
-
-            Spacer(Modifier.weight(1f))
-            HorizontalDivider(modifier = Modifier.padding(horizontal = 20.dp))
-            Spacer(Modifier.height(8.dp))
-
-            // Dark mode toggle
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { onToggleTheme() }
-                    .padding(horizontal = 28.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = if (isDarkTheme) Icons.Default.DarkMode else Icons.Default.LightMode,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(24.dp),
-                )
-                Spacer(Modifier.width(16.dp))
-                Text(
-                    text = if (isDarkTheme) "Dark Mode" else "Light Mode",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Spacer(Modifier.height(16.dp))
-        }
-    }
-
-    private enum class DrawerItem(
-        val label: String,
-        val icon: ImageVector,
-    ) {
-        HOME("Home", Icons.Default.Home),
-        LOGS("DNS Logs", Icons.AutoMirrored.Filled.List),
-        SETTINGS("Settings", Icons.Default.Settings),
-        APPS("App Filter", Icons.Default.PhoneAndroid),
-        ABOUT("About", Icons.AutoMirrored.Filled.HelpCenter),
-    }
-
     private fun handleDrawerNavigation(item: DrawerItem) {
         when (item) {
             DrawerItem.HOME -> {}
@@ -360,23 +300,44 @@ class MainActivity : AppCompatActivity(), IDNSView {
         }
 
     private fun checkPermissions() {
+        val toRequest = mutableListOf<String>()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(
-                    this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 101
-                )
+                toRequest.add(Manifest.permission.POST_NOTIFICATIONS)
             }
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.FOREGROUND_SERVICE_SPECIAL_USE)
+                != PackageManager.PERMISSION_GRANTED) {
+                toRequest.add(Manifest.permission.FOREGROUND_SERVICE_SPECIAL_USE)
+            }
+        }
+        if (toRequest.isNotEmpty()) {
+            permissionLauncher.launch(toRequest.toTypedArray())
         }
     }
 
     private fun getServiceStatus() {
-        if (presenter.isWorking) {
+        if (presenter.isWorking && isOurServiceRunning()) {
             serviceStarted()
             presenter.getServiceInfo()
         } else {
+            if (presenter.isWorking) {
+                preferences?.edit()?.putBoolean("isStarted", false)?.apply()
+            }
             serviceStopped()
         }
+    }
+
+    private fun isOurServiceRunning(): Boolean {
+        val manager = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
+        for (service in manager.getRunningServices(Integer.MAX_VALUE)) {
+            if (DNSService::class.java.name == service.service.className) {
+                return true
+            }
+        }
+        return false
     }
 
     override fun changeStatus(serviceStatus: Int) {
@@ -418,25 +379,36 @@ class MainActivity : AppCompatActivity(), IDNSView {
             pingActive = false
             return
         }
-        pingExecutor.schedule({
-            try {
-                val p = testPing("8.8.8.8")
-                runOnUiThread {
-                    val hist = state.latencyHistory.toMutableList()
-                    if (p < 2000) {
-                        hist.add(p.toFloat())
-                        if (hist.size > 20) hist.removeAt(0)
-                        state = state.copy(pingMs = p, latencyHistory = hist)
-                    } else {
-                        state = state.copy(pingMs = -1)
+        var executor = pingExecutor
+        if (executor == null || executor.isShutdown) {
+            executor = java.util.concurrent.Executors.newSingleThreadScheduledExecutor()
+            pingExecutor = executor
+        }
+        try {
+            executor.schedule({
+                try {
+                    val p = testPing("8.8.8.8")
+                    runOnUiThread {
+                        val hist = state.latencyHistory.toMutableList()
+                        if (p < 2000) {
+                            hist.add(p.toFloat())
+                            if (hist.size > 20) hist.removeAt(0)
+                            state = state.copy(pingMs = p, latencyHistory = hist)
+                        } else {
+                            state = state.copy(pingMs = -1)
+                        }
                     }
+                    runOnUiThread { performPing() }
+                } catch (e: Exception) {
+                    Timber.e(e, "Ping error")
+                    runOnUiThread { performPing() }
                 }
-                runOnUiThread { performPing() }
-            } catch (e: Exception) {
-                Timber.e(e, "Ping error")
-                runOnUiThread { performPing() }
-            }
-        }, 3, java.util.concurrent.TimeUnit.SECONDS)
+            }, 3, java.util.concurrent.TimeUnit.SECONDS)
+        } catch (e: java.util.concurrent.RejectedExecutionException) {
+            Timber.w(e, "Ping task rejected, reinitializing executor")
+            pingExecutor = null
+            pingActive = false
+        }
     }
 
     private fun testPing(ip: String): Long {
@@ -455,28 +427,101 @@ class MainActivity : AppCompatActivity(), IDNSView {
     private var eventsDisposable: io.reactivex.disposables.Disposable? = null
 
     private fun subscribeToEvents() {
-        eventsDisposable = presenter.events.subscribe { o ->
-            if (o is StatsUpdateEvent) {
-                state = state.copy(
-                    totalQueries = o.total,
-                    blockedQueries = o.blocked,
-                    blockPercent = if (o.total > 0) (o.blocked * 100.0 / o.total).toFloat() else 0f,
-                )
+        eventsDisposable = presenter.events.subscribe(
+            { o ->
+                if (o is StatsUpdateEvent) {
+                    state = state.copy(
+                        totalQueries = o.total,
+                        blockedQueries = o.blocked,
+                        blockPercent = if (o.total > 0) (o.blocked * 100.0 / o.total).toFloat() else 0f,
+                    )
+                }
+            },
+            { throwable ->
+                Timber.e(throwable, "Error in MainActivity event subscription")
             }
-        }
+        )
     }
 
     private fun startDNS() {
         if (presenter.isWorking) {
             presenter.stopService()
-        } else {
-            val intent = VpnService.prepare(this)
-            if (intent != null) {
-                vpnLauncher.launch(intent)
-            } else {
-                presenter.startService(currentModel)
+            return
+        }
+
+        val model = currentModel
+        pendingVpnModel = model
+
+        // Validate Android 13+ notification permission
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                Timber.w("Cannot start VPN - POST_NOTIFICATIONS permission not granted")
+                showToast("Notification permission required to run VPN service")
+                checkPermissions()
+                return
             }
         }
+
+        // Validate Android 14+ foreground service permission
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            if (checkSelfPermission(Manifest.permission.FOREGROUND_SERVICE_SPECIAL_USE)
+                != PackageManager.PERMISSION_GRANTED
+            ) {
+                Timber.w("Cannot start VPN - FOREGROUND_SERVICE_SPECIAL_USE permission not granted")
+                showToast("Foreground service permission required for Android 14+")
+                checkPermissions()
+                return
+            }
+        }
+
+        // All permissions validated — proceed with VPN setup
+        Timber.d("All permissions validated ✓ — Starting VPN preparation")
+
+        val intent = VpnService.prepare(this)
+        if (intent != null) {
+            Timber.d("VPN not yet authorized — Requesting user consent")
+            vpnLauncher.launch(intent)
+        } else {
+            Timber.d("VPN already authorized — Starting service directly")
+            pendingVpnModel = null
+            presenter.startService(model)
+        }
+    }
+
+    private fun showPermissionRationaleDialog(deniedPermissions: List<String>) {
+        val message = buildString {
+            append("این برنامه برای کارکرد صحیح به مجوزهای زیر نیاز دارد:\n\n")
+
+            if (Manifest.permission.POST_NOTIFICATIONS in deniedPermissions) {
+                append("📢 نمایش اعلان‌ها: برای نمایش وضعیت فیلترشکن\n\n")
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                if (Manifest.permission.FOREGROUND_SERVICE_SPECIAL_USE in deniedPermissions) {
+                    append("🔒 سرویس پیش‌زمینه: برای فعال نگه داشتن فیلترشکن در پس‌زمینه\n\n")
+                }
+            }
+
+            append("لطفاً مجوزها را در تنظیمات برنامه فعال کنید.")
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("نیاز به مجوزهای ضروری")
+            .setMessage(message)
+            .setPositiveButton("تنظیمات") { _, _ ->
+                openAppSettings()
+            }
+            .setNegativeButton("انصراف", null)
+            .show()
+    }
+
+    private fun openAppSettings() {
+        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = Uri.fromParts("package", packageName, null)
+        }
+        startActivity(intent)
     }
 
     private fun loadDnsItems() {
@@ -518,28 +563,6 @@ class MainActivity : AppCompatActivity(), IDNSView {
         }
     }
 
-    @OptIn(ExperimentalMaterial3Api::class)
-    @Composable
-    private fun DnsPickerDialog(
-        dnsList: List<DNSModel>,
-        onItemClick: (DNSModel) -> Unit,
-        onTestClick: (DNSModel, (Long) -> Unit) -> Unit,
-        onDismiss: () -> Unit,
-    ) {
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-        ModalBottomSheet(
-            onDismissRequest = onDismiss,
-            sheetState = sheetState,
-        ) {
-            val items = dnsList.map { DnsPickerItem(it, it.lastPing) }
-            DnsPickerContent(
-                items = items,
-                onItemClick = onItemClick,
-                onTestClick = onTestClick,
-            )
-        }
-    }
-
     private fun selectDnsModel(model: DNSModel) {
         selectedModel = model
         state = state.copy(
@@ -552,7 +575,8 @@ class MainActivity : AppCompatActivity(), IDNSView {
     override fun onDestroy() {
         eventsDisposable?.dispose()
         pingActive = false
-        pingExecutor.shutdownNow()
+        pingExecutor?.shutdownNow()
+        pingExecutor = null
         presenter.onDestroy()
         super.onDestroy()
     }

@@ -62,4 +62,20 @@
     <string name="test">تست</string>
     <string name="no_ping">-- میلی‌ثانیه</string>
     <string name="copyright">© ۲۰۲۶ دی‌ان‌اس تو گو. تمامی حقوق محفوظ است.</string>
+    <string name="home">خانه</string>
+    <string name="dns_logs">لاگ‌های دی‌ان‌اس</string>
+    <string name="app_filter">فیلتر برنامه</string>
+    <string name="dark_mode">حالت تاریک</string>
+    <string name="light_mode">حالت روشن</string>
+    <string name="no_dns_logs">هنوز لاگی وجود ندارد</string>
+    <string name="dns_servers">سرورهای دی‌ان‌اس</string>
+    <string name="choose_server_desc">یک سرور برای بهینه‌سازی اتصال خود انتخاب کنید</string>
+    <string name="back">بازگشت</string>
+    <string name="tap_to_start">برای شروع DNS لمس کنید</string>
+    <string name="dns_changer_title">تغییر دهنده دی‌ان‌اس</string>
+    <string name="menu">منو</string>
+    <string name="export_csv">خروجی CSV</string>
+    <string name="blocked_label">مسدود شده</string>
+    <string name="block_rate">نرخ مسدودسازی</string>
+    <string name="tab_logs">لاگ‌ها</string>
 </resources>

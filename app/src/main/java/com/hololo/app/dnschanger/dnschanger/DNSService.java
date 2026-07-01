@@ -57,14 +57,19 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.nio.channels.FileChannel;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.inject.Inject;
 import javax.net.ssl.SSLSocket;
@@ -86,11 +91,12 @@ public class DNSService extends VpnService {
     private static final String CHANNEL_ID = "dns_changer_channel";
     private static final int NOTIF_ID = 1903;
     private static final long STOP_JOIN_TIMEOUT_MS = 1500L;
-    private static final int DNS_HEADER_LENGTH = 12;
-    private static final int UDP_HEADER_LENGTH = 8;
-    private static final int IPV4_MIN_HEADER_LENGTH = 20;
-    private static final int IPV6_HEADER_LENGTH = 40;
-    private static final int RESOLVE_THREADS = 4;
+    private static final int RESOLVE_CORE_THREADS = 4;
+    private static final int RESOLVE_MAX_THREADS = 32;
+    private static final int RESOLVE_KEEPALIVE_SEC = 30;
+    private static final int EDNS_PADDING_MAX = 128;
+    private static final int PACKET_POOL_SIZE = 64;
+    private static final int PACKET_BUFFER_SIZE = 65535;
     private static final int UPSTREAM_MAX_RETRIES = 1;
     private static final String FALLBACK_DOH_URL = "https://1.1.1.1/dns-query";
 
@@ -117,8 +123,11 @@ public class DNSService extends VpnService {
     private long lastHandoverTime = 0;
 
     private ParcelFileDescriptor fileDescriptor;
-    private FileOutputStream outputStream;
+    private volatile FileOutputStream outputStream;
     private Thread mThread;
+    private PacketPool packetPool;
+    private LinkedBlockingQueue<byte[]> tunWriteQueue;
+    private Thread tunWriterThread;
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
     private final AtomicBoolean vpnOperational = new AtomicBoolean(false);
     private final AtomicBoolean foregroundStarted = new AtomicBoolean(false);
@@ -146,6 +155,26 @@ public class DNSService extends VpnService {
     private PendingIntent cachedContentIntent;
     private Disposable subscriber;
 
+    private static class PacketPool {
+        private final byte[][] buffers;
+        private final AtomicInteger head = new AtomicInteger();
+        private final Semaphore semaphore;
+
+        PacketPool(int size, int bufSize) {
+            buffers = new byte[size][bufSize];
+            semaphore = new Semaphore(size);
+        }
+
+        byte[] acquire() throws InterruptedException {
+            semaphore.acquire();
+            return buffers[head.getAndIncrement() & (buffers.length - 1)];
+        }
+
+        void release(byte[] buf) {
+            semaphore.release();
+        }
+    }
+
     @Override
     public void onRevoke() {
         super.onRevoke();
@@ -160,11 +189,14 @@ public class DNSService extends VpnService {
 
     @Override
     public void onDestroy() {
+        isRunning.set(false);
+        vpnOperational.set(false);
         stopTunnel(false);
         if (connectivityManager != null && networkCallback != null) {
             connectivityManager.unregisterNetworkCallback(networkCallback);
             networkCallback = null;
         }
+        closeResources();
         Timber.e("Servis kapandı.");
         if (subscriber != null) {
             subscriber.dispose();
@@ -176,17 +208,65 @@ public class DNSService extends VpnService {
     @Override
     public void onCreate() {
         super.onCreate();
+        Timber.d("DNSService onCreate() — Starting service initialization");
+
         preferences = PreferenceManager.getDefaultSharedPreferences(this);
         DNSChangerApp.getApplicationComponent().inject(this);
         statsManager = new StatsManager(this);
         connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        // ============================================
+        // ANDROID 14+ PERMISSION VALIDATION
+        // ============================================
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            Timber.d("Android 14+ detected — Checking FOREGROUND_SERVICE_SPECIAL_USE permission");
+
+            if (checkSelfPermission(android.Manifest.permission.FOREGROUND_SERVICE_SPECIAL_USE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                Timber.e("CRITICAL: FOREGROUND_SERVICE_SPECIAL_USE permission not granted");
+                Timber.e("Service cannot start as foreground service on Android 14+");
+
+                showPermissionErrorNotification();
+                stopSelf();
+                return;
+            }
+
+            Timber.d("FOREGROUND_SERVICE_SPECIAL_USE permission verified ✓");
+        }
+
+        // ============================================
+        // NOTIFICATION PERMISSION CHECK (Android 13+)
+        // ============================================
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                Timber.w("POST_NOTIFICATIONS permission not granted — Notification may not be visible");
+            }
+        }
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
             NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "DNS Changer Service", NotificationManager.IMPORTANCE_LOW);
             manager.createNotificationChannel(channel);
         }
+        startForegroundNotification();
         registerNetworkCallback();
         subscribe();
+    }
+
+    private void showPermissionErrorNotification() {
+        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.ic_dialog_alert)
+                .setContentTitle("DNS Service Error")
+                .setContentText("Required permissions not granted. Please restart app and allow all permissions.")
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setAutoCancel(true)
+                .build();
+
+        NotificationManager manager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (manager != null) {
+            manager.notify(999, notification);
+        }
     }
 
     private void registerNetworkCallback() {
@@ -262,7 +342,7 @@ public class DNSService extends VpnService {
         if (fileDescriptor != null) {
             initOkHttp();
             initDnsRouter();
-            selectBestServer();
+            submitServerSelection();
         }
         Timber.i("Upstream rebonded to new network");
     }
@@ -306,26 +386,48 @@ public class DNSService extends VpnService {
         }
     }
 
+    private void submitServerSelection() {
+        ExecutorService executor = resolveExecutor;
+        if (executor == null || executor.isShutdown()) {
+            return;
+        }
+        executor.execute(() -> {
+            if (!isRunning.get()) return;
+            selectBestServer();
+        });
+    }
+
     private synchronized void initResolveExecutor() {
         if (resolveExecutor == null || resolveExecutor.isShutdown()) {
-            resolveExecutor = Executors.newFixedThreadPool(RESOLVE_THREADS, runnable -> {
-                Thread thread = new Thread(runnable, "DNS Resolver");
-                thread.setDaemon(true);
-                return thread;
-            });
+            resolveExecutor = new ThreadPoolExecutor(
+                    RESOLVE_CORE_THREADS,
+                    RESOLVE_MAX_THREADS,
+                    RESOLVE_KEEPALIVE_SEC, TimeUnit.SECONDS,
+                    new SynchronousQueue<>(),
+                    runnable -> {
+                        Thread thread = new Thread(runnable, "DNS Resolver");
+                        thread.setDaemon(true);
+                        return thread;
+                    }
+            );
         }
     }
 
     private void subscribe() {
-        subscriber = rxBus.getEvents().subscribe(o -> {
-            if (o instanceof StopEvent) {
-                if (isRunning.get()) {
-                    stopThisService();
+        subscriber = rxBus.getEvents().subscribe(
+            o -> {
+                if (o instanceof StopEvent) {
+                    if (isRunning.get()) {
+                        stopThisService();
+                    }
+                } else if (o instanceof GetServiceInfo) {
+                    rxBus.sendEvent(new ServiceInfo(dnsModel));
                 }
-            } else if (o instanceof GetServiceInfo) {
-                rxBus.sendEvent(new ServiceInfo(dnsModel));
+            },
+            throwable -> {
+                Timber.e(throwable, "Error in DNSService RxBus subscription");
             }
-        });
+        );
     }
 
     private void showNotification() {
@@ -342,6 +444,24 @@ public class DNSService extends VpnService {
         }
     }
 
+    private void startForegroundNotification() {
+        if (foregroundStarted.get()) return;
+        Notification notification = new NotificationCompat.Builder(this, CHANNEL_ID)
+                .setContentTitle(getString(R.string.app_name))
+                .setContentText(getString(R.string.dns_turbo_active))
+                .setSmallIcon(R.drawable.dns_changer_ico_inverse)
+                .setOngoing(true)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .build();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(NOTIF_ID, notification,
+                    android.content.pm.ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE);
+        } else {
+            startForeground(NOTIF_ID, notification);
+        }
+        foregroundStarted.set(true);
+    }
+
     private Notification buildNotification() {
         updateTrafficCounters();
 
@@ -349,7 +469,7 @@ public class DNSService extends VpnService {
         String upUsage = formatBytes(uploadedBytes.get());
 
         String status = isRunning.get()
-                ? (dnsModel != null ? getString(R.string.connected_to, dnsModel.getName()) : getString(R.string.dns_turbo_active))
+                ? (dnsModel != null ? getString(R.string.connected_to, serverName()) : getString(R.string.dns_turbo_active))
                 : getString(R.string.disconnected);
 
         String contentText = status
@@ -357,6 +477,7 @@ public class DNSService extends VpnService {
 
         if (cachedContentIntent == null) {
             Intent intent = new Intent(this, MainActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
             cachedContentIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
         }
         if (cachedDisconnectIntent == null) {
@@ -421,6 +542,12 @@ public class DNSService extends VpnService {
         int exp = (int) (Math.log(bytes) / Math.log(1024));
         String pre = "KMGTPE".charAt(exp - 1) + "";
         return String.format(Locale.ENGLISH, "%.1f %sB", bytes / Math.pow(1024, exp), pre);
+    }
+
+    private String serverName() {
+        DnsServer server = selectedServer;
+        if (server != null && server.getName() != null) return server.getName();
+        return dnsModel != null ? dnsModel.getName() : getString(R.string.dns_turbo_active);
     }
 
     private void closeResources() {
@@ -585,6 +712,21 @@ public class DNSService extends VpnService {
             }
         }
 
+        Thread writerThread = tunWriterThread;
+        tunWriterThread = null;
+        if (writerThread != null) {
+            writerThread.interrupt();
+            if (writerThread != Thread.currentThread()) {
+                try {
+                    writerThread.join(500);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
+        tunWriteQueue = null;
+        packetPool = null;
+
         closeOutputStream();
 
         // Show disconnect notification before removing foreground
@@ -658,10 +800,10 @@ public class DNSService extends VpnService {
                 VpnService.Builder tunnelBuilder = new VpnService.Builder();
                 tunnelBuilder.setSession(DNSService.this.getText(R.string.app_name).toString())
                         .addAddress("192.168.0.1", 24)
-                        .addRoute("0.0.0.0", 0)
                         .addAddress("fd00:1::1", 128)
-                        .addRoute("::", 0)
                         .addDnsServer(dnsModel.getFirstDns());
+
+                addDnsRoute(tunnelBuilder, dnsModel.getFirstDns());
 
                 applyAppFilter(tunnelBuilder);
                 
@@ -669,9 +811,16 @@ public class DNSService extends VpnService {
 
                 if (dnsModel.getSecondDns() != null && !dnsModel.getSecondDns().isEmpty()) {
                     tunnelBuilder.addDnsServer(dnsModel.getSecondDns());
+                    addDnsRoute(tunnelBuilder, dnsModel.getSecondDns());
                     Timber.i("Secondary DNS added: %s", dnsModel.getSecondDns());
                 }
 
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    tunnelBuilder.setBlocking(true);
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    tunnelBuilder.addDisallowedApplication(getPackageName());
+                }
                 setFileDescriptor(tunnelBuilder.establish());
 
                 if (fileDescriptor == null) {
@@ -683,36 +832,76 @@ public class DNSService extends VpnService {
                 Log.d("DNSDebug", "establish OK vpnRef=" + System.identityHashCode(DNSService.this));
                 initOkHttp();
                 initDnsRouter();
-                selectBestServer();
+
+                // Launch server selection asynchronously so the TUN reader starts immediately.
+                // During selection the fallback path (user-entered IPs + Cloudflare DoH) handles queries.
+                submitServerSelection();
 
                 resetTrafficCounters();
 
-                try (FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor())) {
-                    outputStream = new FileOutputStream(fileDescriptor.getFileDescriptor());
-                    ByteBuffer packet = ByteBuffer.allocate(32767);
+                packetPool = new PacketPool(PACKET_POOL_SIZE, PACKET_BUFFER_SIZE);
+                tunWriteQueue = new LinkedBlockingQueue<>();
 
-                    // Exit condition must observe both app stop and thread interrupt; never use while(true).
+                tunWriterThread = new Thread(() -> {
                     while (isRunning.get() && !Thread.currentThread().isInterrupted()) {
                         try {
-                            if (inputStream.available() == 0) {
-                                try { Thread.sleep(50); } catch (InterruptedException ie) {
-                                    Thread.currentThread().interrupt();
-                                    break;
+                            byte[] data = tunWriteQueue.poll(500, TimeUnit.MILLISECONDS);
+                            if (data != null) {
+                                FileOutputStream out = outputStream;
+                                if (out != null) {
+                                    out.write(data);
                                 }
-                                continue;
                             }
-                            int length = inputStream.read(packet.array());
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        } catch (IOException e) {
+                            if (isRunning.get()) Timber.w(e, "TUN write failed");
+                        }
+                    }
+                }, "TUN Writer");
+                tunWriterThread.setDaemon(true);
+                tunWriterThread.start();
+
+                try (FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor())) {
+                    FileChannel readChannel = inputStream.getChannel();
+                    outputStream = new FileOutputStream(fileDescriptor.getFileDescriptor());
+                    ByteBuffer directBuffer = ByteBuffer.allocateDirect(PACKET_BUFFER_SIZE);
+
+                    while (isRunning.get() && !Thread.currentThread().isInterrupted()) {
+                        try {
+                            directBuffer.clear();
+                            int length = readChannel.read(directBuffer);
                             if (length < 0) {
                                 break;
-                            } else if (length > 0) {
-                                packet.limit(length);
-                                packet.rewind();
-                                handlePacket(packet, length);
-                                packet.clear();
                             }
+                            if (length > 0) {
+                                byte[] buffer = packetPool.acquire();
+                                directBuffer.flip();
+                                directBuffer.get(buffer, 0, length);
+
+                                ExecutorService executor = resolveExecutor;
+                                if (executor != null && !executor.isShutdown()) {
+                                    executor.execute(() -> {
+                                        try {
+                                            handlePacket(ByteBuffer.wrap(buffer, 0, length), length);
+                                        } finally {
+                                            packetPool.release(buffer);
+                                        }
+                                    });
+                                } else {
+                                    packetPool.release(buffer);
+                                }
+                            }
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            break;
                         } catch (java.io.InterruptedIOException e) {
                             Thread.currentThread().interrupt();
                             break;
+                        } catch (java.io.IOException e) {
+                            if (!isRunning.get()) break;
+                            Timber.w("TUN read failed", e);
                         } catch (Exception e) {
                             if (isRunning.get()) Timber.e(e, "Error processing TUN packet");
                         }
@@ -729,116 +918,40 @@ public class DNSService extends VpnService {
             }
         }, "DNS Changer");
         mThread.start();
-        return Service.START_NOT_STICKY;
+        return Service.START_STICKY;
     }
 
     private void handlePacket(ByteBuffer packet, int length) {
-        if (length < IPV4_MIN_HEADER_LENGTH) return;
+        DnsPacketHandler.DnsQueryResult result = DnsPacketHandler.parseDnsQuery(packet, length);
+        if (result == null) return;
 
-        int version = (packet.get(0) >> 4) & 0x0F;
-        if (version == 4) {
-            handleIPv4(packet, length);
-        } else if (version == 6 && length >= 40) {
-            handleIPv6(packet, length);
+        Timber.d("DNS Query: ID=%d, Domain=%s, Type=%d", result.transactionId, result.domain, result.type);
+
+        statsManager.incrementTotal(this, rxBus);
+
+        if (blockManager.isBlocked(result.domain)) {
+            LogManager.addLog(this, result.domain + " | BLOCKED | Local");
+            statsManager.incrementBlocked(this, rxBus);
+            byte[] nxDomain = DnsResponseBuilder.buildNxDomainResponse(result.transactionId, result.domain);
+            byte[] wrapped = DnsResponseBuilder.wrapInIpPacket(nxDomain, ByteBuffer.wrap(result.originalPacket));
+            if (wrapped != null) writeToTun(wrapped);
+            return;
         }
-    }
 
-    private void handleIPv4(ByteBuffer packet, int length) {
-        int ihl = (packet.get(0) & 0x0F) * 4;
-        int totalLength = packet.getShort(2) & 0xFFFF;
-        if (ihl < IPV4_MIN_HEADER_LENGTH || ihl > length) return;
-        if (totalLength < ihl + UDP_HEADER_LENGTH || totalLength > length) return;
-        if (totalLength < ihl + UDP_HEADER_LENGTH) return; // bounds-check before UDP read
-        
-        byte protocol = packet.get(9);
-        if (protocol == 17) { // UDP
-            int udpOffset = ihl;
-            if (udpOffset + UDP_HEADER_LENGTH > totalLength) return;
-            int destPort = packet.getShort(ihl + 2) & 0xFFFF;
-            int udpLength = packet.getShort(ihl + 4) & 0xFFFF;
-            if (udpLength < UDP_HEADER_LENGTH || udpOffset + udpLength > totalLength) return;
-            if (destPort == 53) {
-                parseDNS(packet, ihl + UDP_HEADER_LENGTH, udpOffset + udpLength);
+        byte[] cachedResponse = dnsCache.get(result.domain, result.type);
+        if (cachedResponse != null) {
+            LogManager.addLog(this, result.domain + " | ALLOWED | Cache");
+            ByteBuffer responseBuf = ByteBuffer.wrap(cachedResponse.clone());
+            if (responseBuf.remaining() >= 2) {
+                responseBuf.putShort((short) result.transactionId);
+                byte[] wrapped = DnsResponseBuilder.wrapInIpPacket(responseBuf.array(),
+                        ByteBuffer.wrap(result.originalPacket));
+                if (wrapped != null) writeToTun(wrapped);
             }
+            return;
         }
-    }
 
-    private void handleIPv6(ByteBuffer packet, int length) {
-        if (length < IPV6_HEADER_LENGTH + UDP_HEADER_LENGTH) return; // IPv6 Header + UDP Header
-        int payloadLength = packet.getShort(4) & 0xFFFF;
-        int packetLength = IPV6_HEADER_LENGTH + payloadLength;
-        if (payloadLength < UDP_HEADER_LENGTH || packetLength > length) return;
-        byte nextHeader = packet.get(6);
-        if (nextHeader == 17) { // UDP
-            int udpOffset = IPV6_HEADER_LENGTH;
-            int destPort = packet.getShort(udpOffset + 2) & 0xFFFF;
-            int udpLength = packet.getShort(udpOffset + 4) & 0xFFFF;
-            if (udpLength < UDP_HEADER_LENGTH || udpOffset + udpLength > packetLength) return;
-            if (destPort == 53) {
-                parseDNS(packet, udpOffset + UDP_HEADER_LENGTH, udpOffset + udpLength);
-            }
-        }
-    }
-
-    private void parseDNS(ByteBuffer packet, int dnsOffset, int dnsEnd) {
-        if (dnsOffset < 0 || dnsEnd > packet.limit() || dnsEnd - dnsOffset < DNS_HEADER_LENGTH) return; // DNS Header is 12 bytes
-        ByteBuffer dnsBuffer = packet.duplicate();
-        dnsBuffer.position(dnsOffset);
-        dnsBuffer.limit(dnsEnd);
-        
-        int transactionId = dnsBuffer.getShort() & 0xFFFF;
-        dnsBuffer.getShort(); // Flags
-        int qdCount = dnsBuffer.getShort() & 0xFFFF;
-
-        if (qdCount > 0 && dnsBuffer.remaining() > 0) {
-            // Position is already at dnsOffset + 6, we need to skip 6 more bytes to get to Question
-            // QD (2) + AN (2) + NS (2) + AR (2) = 8 bytes after ID(2) and Flags(2).
-            // Currently at Offset+6 (ID, Flags, QD). Next are AN, NS, AR (6 bytes).
-            if (dnsBuffer.remaining() < 6) return;
-            dnsBuffer.getShort(); // AN
-            dnsBuffer.getShort(); // NS
-            dnsBuffer.getShort(); // AR
-            
-            String domain = parseDomainName(dnsBuffer);
-            if (dnsBuffer.remaining() >= 4) { // QTYPE (2) + QCLASS (2)
-                int type = dnsBuffer.getShort() & 0xFFFF;
-                dnsBuffer.getShort(); // QCLASS
-                
-                Timber.d("DNS Query: ID=%d, Domain=%s, Type=%d", transactionId, domain, type);
-                
-                statsManager.incrementTotal(this, rxBus);
-
-                if (blockManager.isBlocked(domain)) {
-                    LogManager.addLog(this, domain + " | BLOCKED | Local");
-                    statsManager.incrementBlocked(this, rxBus);
-                    sendNxDomainResponse(transactionId, domain, packet);
-                    return;
-                }
-
-                byte[] cachedResponse = dnsCache.get(domain, type);
-                if (cachedResponse != null) {
-                    LogManager.addLog(this, domain + " | ALLOWED | Cache");
-                    ByteBuffer responseBuf = ByteBuffer.wrap(cachedResponse.clone());
-                    if (responseBuf.remaining() >= 2) {
-                        responseBuf.putShort((short) transactionId);
-                        handleDoHResponse(responseBuf.array(), packet, dnsOffset);
-                    }
-                    return;
-                }
-
-                int rawQueryLength = dnsEnd - dnsOffset;
-                if (rawQueryLength <= 0) return;
-                byte[] rawQuery = new byte[rawQueryLength];
-                ByteBuffer rawQueryBuffer = packet.duplicate();
-                rawQueryBuffer.position(dnsOffset);
-                rawQueryBuffer.limit(dnsEnd);
-                rawQueryBuffer.get(rawQuery);
-
-                byte[] originalPacket = Arrays.copyOf(packet.array(), packet.limit());
-
-                submitResolve(rawQuery, originalPacket, dnsOffset, domain, type);
-            }
-        }
+        submitResolve(result.rawQuery, result.originalPacket, result.dnsOffset, result.domain, result.type);
     }
 
     private void submitResolve(byte[] rawQuery, byte[] originalPacket, int dnsOffset, String domain, int type) {
@@ -847,8 +960,9 @@ public class DNSService extends VpnService {
             Timber.w("Resolve executor is not available");
             return;
         }
+        byte[] paddedQuery = DnsPacketHandler.addEdnsPadding(rawQuery, EDNS_PADDING_MAX);
         try {
-            executor.execute(() -> resolveDns(rawQuery, originalPacket, dnsOffset, domain, type));
+            executor.execute(() -> resolveDns(paddedQuery, originalPacket, dnsOffset, domain, type));
         } catch (java.util.concurrent.RejectedExecutionException e) {
             Timber.w("Resolve task rejected: %s", e.getMessage());
         }
@@ -990,7 +1104,7 @@ public class DNSService extends VpnService {
             // Skip questions safely
             for (int i = 0; i < qdCount; i++) {
                 if (!buf.hasRemaining()) break;
-                skipDomainName(buf);
+                DnsPacketHandler.skipDomainName(buf);
                 if (buf.remaining() < 4) break;
                 buf.getShort(); // Type
                 buf.getShort(); // Class
@@ -1000,7 +1114,7 @@ public class DNSService extends VpnService {
             long minTtl = 300; // Default 5 mins
             for (int i = 0; i < anCount; i++) {
                 if (!buf.hasRemaining()) break;
-                skipDomainName(buf);
+                DnsPacketHandler.skipDomainName(buf);
                 if (buf.remaining() < 10) break; // Type(2) + Class(2) + TTL(4) + RDLen(2)
                 buf.getShort(); // Type
                 buf.getShort(); // Class
@@ -1017,168 +1131,15 @@ public class DNSService extends VpnService {
         }
     }
 
-    private void skipDomainName(ByteBuffer buf) {
-        int depth = 0;
-        while (buf.hasRemaining() && depth++ < 10) {
-            int len = buf.get() & 0xFF;
-            if (len == 0) return;
-            if ((len & 0xC0) == 0xC0) {
-                if (buf.hasRemaining()) buf.get(); // Skip pointer
-                return;
-            }
-            if (buf.remaining() < len) break;
-            buf.position(buf.position() + len);
-        }
-    }
-
     private void handleDoHResponse(byte[] dnsResponse, ByteBuffer originalPacket, int dnsOffset) {
-        int version = (originalPacket.get(0) >> 4) & 0x0F;
-        if (version == 4) {
-            writeIPv4Response(dnsResponse, originalPacket);
-        } else if (version == 6) {
-            writeIPv6Response(dnsResponse, originalPacket);
-        }
+        byte[] wrapped = DnsResponseBuilder.wrapInIpPacket(dnsResponse, originalPacket);
+        if (wrapped != null) writeToTun(wrapped);
     }
 
-    private void writeIPv4Response(byte[] dnsResponse, ByteBuffer originalPacket) {
-        int ihl = (originalPacket.get(0) & 0x0F) * 4;
-        byte[] srcIp = new byte[4];
-        byte[] dstIp = new byte[4];
-        originalPacket.position(12);
-        originalPacket.get(srcIp);
-        originalPacket.get(dstIp);
-
-        int srcPort = originalPacket.getShort(ihl) & 0xFFFF;
-        int dstPort = originalPacket.getShort(ihl + 2) & 0xFFFF;
-
-        int totalLen = 20 + 8 + dnsResponse.length;
-        ByteBuffer response = ByteBuffer.allocate(totalLen);
-
-        // IPv4 Header
-        response.put((byte) 0x45);
-        response.put((byte) 0x00);
-        response.putShort((short) totalLen);
-        response.putShort((short) 0);
-        response.putShort((short) 0x4000); // Flags: Don't Fragment
-        response.put((byte) 64); // TTL
-        response.put((byte) 17); // Protocol: UDP
-        int checksumPos = response.position();
-        response.putShort((short) 0); // Placeholder for checksum
-        response.put(dstIp); // Reverse: Original Destination is now Source
-        response.put(srcIp); // Reverse: Original Source is now Destination
-
-        // IP Checksum
-        short ipChecksum = calculateChecksum(response.array(), 20);
-        response.putShort(checksumPos, ipChecksum);
-
-        // UDP Header
-        response.putShort((short) dstPort); // Reverse Port
-        response.putShort((short) srcPort);
-        response.putShort((short) (8 + dnsResponse.length));
-        response.putShort((short) 0); // Checksum (optional for IPv4, but better to set 0 or calculate)
-
-        response.put(dnsResponse);
-
-        writeToTun(response.array());
-    }
-
-    private void writeIPv6Response(byte[] dnsResponse, ByteBuffer originalPacket) {
-        byte[] srcIp = new byte[16];
-        byte[] dstIp = new byte[16];
-        originalPacket.position(8);
-        originalPacket.get(srcIp);
-        originalPacket.get(dstIp);
-
-        int srcPort = originalPacket.getShort(40) & 0xFFFF;
-        int dstPort = originalPacket.getShort(42) & 0xFFFF;
-
-        int totalLen = 40 + 8 + dnsResponse.length;
-        ByteBuffer response = ByteBuffer.allocate(totalLen);
-
-        // IPv6 Header
-        response.putInt(0x60000000); // Version 6, Traffic Class 0, Flow Label 0
-        response.putShort((short) (8 + dnsResponse.length)); // Payload Length
-        response.put((byte) 17); // Next Header: UDP
-        response.put((byte) 64); // Hop Limit
-        response.put(dstIp);
-        response.put(srcIp);
-
-        // UDP Header
-        response.putShort((short) dstPort);
-        response.putShort((short) srcPort);
-        response.putShort((short) (8 + dnsResponse.length));
-        response.putShort((short) 0); // Checksum placeholder
-
-        // Calculate IPv6 UDP Checksum (Mandatory)
-        int udpChecksum = calculateIPv6UdpChecksum(dstIp, srcIp, 8 + dnsResponse.length, response.array(), 40, dnsResponse);
-        response.putShort(46, (short) udpChecksum);
-
-        response.put(dnsResponse);
-        writeToTun(response.array());
-    }
-
-    private short calculateChecksum(byte[] data, int length) {
-        int sum = 0;
-        int i = 0;
-        int remaining = length;
-        while (remaining > 1) {
-            sum += ((data[i] & 0xFF) << 8) | (data[i + 1] & 0xFF);
-            if ((sum & 0x80000000) != 0) sum = (sum & 0xFFFF) + (sum >> 16);
-            i += 2;
-            remaining -= 2;
-        }
-        if (remaining > 0) {
-            sum += (data[i] & 0xFF) << 8;
-        }
-        while ((sum >> 16) > 0) {
-            sum = (sum & 0xFFFF) + (sum >> 16);
-        }
-        return (short) (~sum);
-    }
-
-    private int calculateIPv6UdpChecksum(byte[] srcIp, byte[] dstIp, int udpLen, byte[] udpHeader, int udpHeaderOffset, byte[] payload) {
-        int sum = 0;
-        
-        // Pseudo-header
-        for (int i = 0; i < 16; i += 2) {
-            sum += ((srcIp[i] & 0xFF) << 8) | (srcIp[i+1] & 0xFF);
-            sum += ((dstIp[i] & 0xFF) << 8) | (dstIp[i+1] & 0xFF);
-        }
-        sum += udpLen;
-        sum += 17; // Next Header (UDP)
-
-        // UDP Header (first 6 bytes, skipping checksum field)
-        for (int i = 0; i < 6; i += 2) {
-            sum += ((udpHeader[udpHeaderOffset + i] & 0xFF) << 8) | (udpHeader[udpHeaderOffset + i + 1] & 0xFF);
-        }
-
-        // Payload
-        int i = 0;
-        int remaining = payload.length;
-        while (remaining > 1) {
-            sum += ((payload[i] & 0xFF) << 8) | (payload[i + 1] & 0xFF);
-            i += 2;
-            remaining -= 2;
-        }
-        if (remaining > 0) {
-            sum += (payload[i] & 0xFF) << 8;
-        }
-
-        while ((sum >> 16) > 0) {
-            sum = (sum & 0xFFFF) + (sum >> 16);
-        }
-        return (~sum) & 0xFFFF;
-    }
-
-    private synchronized void writeToTun(byte[] data) {
-        if (outputStream != null && isRunning.get()) {
-            try {
-                outputStream.write(data);
-                outputStream.flush();
-            } catch (IOException e) {
-                Timber.e(e, "Error writing to TUN");
-            }
-        }
+    private void writeToTun(byte[] data) {
+        LinkedBlockingQueue<byte[]> queue = tunWriteQueue;
+        if (queue == null || !isRunning.get()) return;
+        queue.offer(data);
     }
 
     private void applyAppFilter(VpnService.Builder builder) {
@@ -1196,59 +1157,15 @@ public class DNSService extends VpnService {
         }
     }
 
-    private void sendNxDomainResponse(int transactionId, String domain, ByteBuffer originalPacket) {
-        // Construct a DNS NXDOMAIN response
-        ByteBuffer dnsResponse = ByteBuffer.allocate(12 + 64); // Header + some space for query echo
-        dnsResponse.putShort((short) transactionId);
-        dnsResponse.putShort((short) 0x8183); // Flags: Response, Opcode 0, Authoritative 0, Truncated 0, RD 1, RA 1, Z 0, RCODE 3 (NXDOMAIN)
-        dnsResponse.putShort((short) 1); // QDCOUNT
-        dnsResponse.putShort((short) 0); // ANCOUNT
-        dnsResponse.putShort((short) 0); // NSCOUNT
-        dnsResponse.putShort((short) 0); // ARCOUNT
-
-        // Echo the domain name in the question section
-        String[] labels = domain.split("\\.");
-        for (String label : labels) {
-            dnsResponse.put((byte) label.length());
-            for (char c : label.toCharArray()) {
-                dnsResponse.put((byte) c);
-            }
+    private void addDnsRoute(VpnService.Builder builder, String dnsIp) {
+        try {
+            boolean isIpv6 = dnsIp.contains(":");
+            int prefix = isIpv6 ? 128 : 32;
+            builder.addRoute(dnsIp, prefix);
+            Timber.d("Added DNS route: %s/%d", dnsIp, prefix);
+        } catch (Exception e) {
+            Timber.e(e, "Failed to add DNS route for: %s", dnsIp);
         }
-        dnsResponse.put((byte) 0);
-        dnsResponse.putShort((short) 1); // QTYPE A
-        dnsResponse.putShort((short) 1); // QCLASS IN
-
-        byte[] dnsData = new byte[dnsResponse.position()];
-        dnsResponse.flip();
-        dnsResponse.get(dnsData);
-
-        handleDoHResponse(dnsData, originalPacket, 0); // Reuse the packet synthesis logic
     }
 
-    private String parseDomainName(ByteBuffer packet) {
-        StringBuilder domain = new StringBuilder();
-        for (int depth = 0; depth < 10; depth++) { // Limit depth to prevent infinite loops
-            if (!packet.hasRemaining()) break;
-            int labelLength = packet.get() & 0xFF;
-            if (labelLength == 0) break;
-            
-            if ((labelLength & 0xC0) == 0xC0) { // Compression pointer
-                if (packet.hasRemaining()) {
-                    packet.get(); // Skip pointer byte
-                    if (domain.length() == 0) domain.append("[compressed]");
-                }
-                break;
-            }
-
-            if (packet.remaining() < labelLength) break;
-            for (int i = 0; i < labelLength; i++) {
-                domain.append((char) packet.get());
-            }
-            domain.append(".");
-        }
-        if (domain.length() > 0 && domain.charAt(domain.length() - 1) == '.') {
-            domain.setLength(domain.length() - 1);
-        }
-        return domain.length() == 0 ? "unknown" : domain.toString();
-    }
 }

@@ -2,7 +2,7 @@ package com.hololo.app.dnschanger.dnschanger
 
 import android.content.Context
 import android.os.Bundle
-import androidx.activity.ComponentActivity
+import androidx.appcompat.app.AppCompatActivity
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -40,14 +40,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import com.hololo.app.dnschanger.R
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hololo.app.dnschanger.utils.LogManager
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
-class LogActivity : ComponentActivity() {
+class LogActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -73,13 +76,13 @@ fun LogScreen(
     onExport: () -> Unit,
     onClear: () -> Unit
 ) {
-    var logs by remember { mutableStateOf(emptyList<String>()) }
+    var logs by remember { mutableStateOf(emptyList<LogManager.DnsLogEntry>()) }
     val listState = rememberLazyListState()
 
     LaunchedEffect(Unit) {
-        while (true) {
+        while (isActive) {
             logs = LogManager.getLogs(context)
-            if (listState.firstVisibleItemIndex <= 2) {
+            if (listState.firstVisibleItemIndex <= 2 && listState.layoutInfo.totalItemsCount > 0) {
                 listState.animateScrollToItem(0)
             }
             delay(2000)
@@ -89,18 +92,21 @@ fun LogScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("DNS Logs (${logs.size})", fontWeight = FontWeight.SemiBold) },
+                title = { Text("${stringResource(R.string.dns_logs)} (${logs.size})", fontWeight = FontWeight.SemiBold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.back))
                     }
                 },
                 actions = {
                     IconButton(onClick = onExport) {
-                        Icon(Icons.Default.FileDownload, contentDescription = "Export CSV")
+                        Icon(Icons.Default.FileDownload, contentDescription = stringResource(R.string.export_csv))
                     }
-                    IconButton(onClick = onClear) {
-                        Icon(Icons.Default.ClearAll, contentDescription = "Clear Logs")
+                    IconButton(onClick = {
+                        onClear()
+                        logs = emptyList()
+                    }) {
+                        Icon(Icons.Default.ClearAll, contentDescription = stringResource(R.string.clear_logs))
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -118,7 +124,7 @@ fun LogScreen(
         ) {
             if (logs.isEmpty()) {
                 Text(
-                    text = "No DNS logs yet",
+                    text = stringResource(R.string.no_dns_logs),
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                     fontSize = 16.sp,
                     modifier = Modifier.align(Alignment.Center)
@@ -130,8 +136,8 @@ fun LogScreen(
                         .fillMaxSize()
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
-                    items(logs, key = { it }) { entry ->
-                        LogItem(entry = entry)
+                    items(logs, key = { it.id }) { entry ->
+                        LogItem(entry = entry.message)
                     }
                 }
             }

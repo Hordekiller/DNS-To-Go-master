@@ -5,8 +5,14 @@ import android.net.VpnService;
 import com.hololo.app.dnschanger.model.DnsServer;
 import com.hololo.app.dnschanger.model.DnsType;
 
+import java.net.DatagramSocket;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import okhttp3.CertificatePinner;
 import okhttp3.OkHttpClient;
 
 public class DnsRouter {
@@ -14,6 +20,7 @@ public class DnsRouter {
     private final OkHttpClient client;
     private final VpnService vpnService;
     private final ResolverConfig config;
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     public DnsRouter() {
         this(null, null, ResolverConfig.defaults());
@@ -28,7 +35,16 @@ public class DnsRouter {
     }
 
     public DnsRouter(OkHttpClient client, VpnService vpnService, ResolverConfig config) {
-        this.client = client;
+        if (client != null) {
+            this.client = client;
+        } else {
+            this.client = new OkHttpClient.Builder()
+                    .connectTimeout(config.getDohTimeoutMs(), TimeUnit.MILLISECONDS)
+                    .readTimeout(config.getDohTimeoutMs(), TimeUnit.MILLISECONDS)
+                    .writeTimeout(config.getDohTimeoutMs(), TimeUnit.MILLISECONDS)
+                    .retryOnConnectionFailure(true)
+                    .build();
+        }
         this.vpnService = vpnService;
         this.config = config;
     }
@@ -38,38 +54,70 @@ public class DnsRouter {
         return resolver.query(rawQuery);
     }
 
-    private synchronized DnsResolver getResolver(DnsServer server) throws Exception {
+    private DnsResolver getResolver(DnsServer server) throws Exception {
         String key = server.getId();
-        if (resolverMap.containsKey(key)) {
-            return resolverMap.get(key);
-        }
-
-        DnsResolver resolver;
-        DnsType type = server.getType();
-        if (type == DnsType.DOH) {
-            resolver = new DohResolver(server, client);
-        } else if (type == DnsType.DOT) {
-            resolver = new DotResolver(server, vpnService);
-        } else if (type == DnsType.PLAIN_TCP) {
-            resolver = new TcpDnsResolver(server, vpnService);
-        } else {
-            if (vpnService != null) {
-                resolver = new UdpDnsResolver(server, new ProtectedDatagramSocketProvider(vpnService), vpnService);
-            } else {
-                resolver = new UdpDnsResolver(server);
+        lock.readLock().lock();
+        try {
+            DnsResolver existing = resolverMap.get(key);
+            if (existing != null) {
+                return existing;
             }
+        } finally {
+            lock.readLock().unlock();
         }
 
-        resolverMap.put(key, resolver);
-        return resolver;
+        lock.writeLock().lock();
+        try {
+            DnsResolver existing = resolverMap.get(key);
+            if (existing != null) {
+                return existing;
+            }
+
+            DnsResolver resolver;
+            DnsType type = server.getType();
+            if (type == DnsType.DOH) {
+                CertificatePinner pinner = buildCertificatePinner(server);
+                resolver = new DohResolver(server, client, pinner);
+            } else if (type == DnsType.DOT) {
+                resolver = new DotResolver(server, vpnService, config.getDotTimeoutMs());
+            } else if (type == DnsType.PLAIN_TCP) {
+                resolver = new TcpDnsResolver(server, vpnService, config.getTcpTimeoutMs());
+            } else {
+                if (vpnService != null) {
+                    resolver = new UdpDnsResolver(server, new ProtectedDatagramSocketProvider(vpnService), vpnService, config.getUdpTimeoutMs());
+                } else {
+                    resolver = new UdpDnsResolver(server, DatagramSocket::new, null, config.getUdpTimeoutMs());
+                }
+            }
+
+            resolverMap.put(key, resolver);
+            return resolver;
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     public void close() {
-        synchronized (this) {
+        lock.writeLock().lock();
+        try {
             for (DnsResolver resolver : resolverMap.values()) {
                 resolver.close();
             }
             resolverMap.clear();
+        } finally {
+            lock.writeLock().unlock();
         }
+    }
+
+    private CertificatePinner buildCertificatePinner(DnsServer server) {
+        String hostname = server.getHostname();
+        if (hostname == null || hostname.isEmpty()) return null;
+        List<String> pins = config.getCertificatePins().get(hostname);
+        if (pins == null || pins.isEmpty()) return null;
+        CertificatePinner.Builder builder = new CertificatePinner.Builder();
+        for (String pin : pins) {
+            builder.add(hostname, pin);
+        }
+        return builder.build();
     }
 }
