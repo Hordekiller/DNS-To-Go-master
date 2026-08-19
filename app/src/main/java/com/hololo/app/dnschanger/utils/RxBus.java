@@ -1,12 +1,12 @@
 package com.hololo.app.dnschanger.utils;
 
 import io.reactivex.Observable;
-import io.reactivex.subjects.PublishSubject;
+import io.reactivex.subjects.ReplaySubject;
 
 public class RxBus {
     private static RxBus instance;
 
-    private PublishSubject<Object> subject = PublishSubject.create();
+    private ReplaySubject<Object> subject = ReplaySubject.createWithSize(1);
 
     public static RxBus instanceOf() {
         if (instance == null) {

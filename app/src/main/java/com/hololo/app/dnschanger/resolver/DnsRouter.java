@@ -59,7 +59,7 @@ public class DnsRouter {
         lock.readLock().lock();
         try {
             DnsResolver existing = resolverMap.get(key);
-            if (existing != null) {
+            if (existing != null && !existing.isClosed()) {
                 return existing;
             }
         } finally {
@@ -69,8 +69,12 @@ public class DnsRouter {
         lock.writeLock().lock();
         try {
             DnsResolver existing = resolverMap.get(key);
-            if (existing != null) {
+            if (existing != null && !existing.isClosed()) {
                 return existing;
+            }
+            if (existing != null) {
+                try { existing.close(); } catch (Exception ignored) {}
+                resolverMap.remove(key);
             }
 
             DnsResolver resolver;

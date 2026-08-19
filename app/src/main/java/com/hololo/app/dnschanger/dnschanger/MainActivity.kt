@@ -145,6 +145,12 @@ class MainActivity : AppCompatActivity(), IDNSView {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        pendingVpnModel = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            savedInstanceState?.getParcelable("pendingVpnModel", DNSModel::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            savedInstanceState?.getParcelable("pendingVpnModel")
+        }
         DaggerDNSComponent.builder()
             .applicationComponent(DNSChangerApp.getApplicationComponent())
             .dNSModule(DNSModule(this))
@@ -157,6 +163,18 @@ class MainActivity : AppCompatActivity(), IDNSView {
         setContent { AppContent() }
         getServiceStatus()
         showMyketRating()
+    }
+
+    override fun onResume() {
+        super.onResume()
+        getServiceStatus()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        pendingVpnModel?.let { model ->
+            outState.putParcelable("pendingVpnModel", model)
+        }
     }
 
     private fun showMyketRating() {

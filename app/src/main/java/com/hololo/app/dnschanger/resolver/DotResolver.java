@@ -105,4 +105,9 @@ public class DotResolver implements DnsResolver {
             socket = null;
         }
     }
+
+    @Override
+    public boolean isClosed() {
+        return socket == null || socket.isClosed();
+    }
 }

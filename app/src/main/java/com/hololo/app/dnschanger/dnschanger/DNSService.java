@@ -98,6 +98,8 @@ public class DNSService extends VpnService {
     private static final int PACKET_POOL_SIZE = 64;
     private static final int PACKET_BUFFER_SIZE = 65535;
     private static final int UPSTREAM_MAX_RETRIES = 1;
+    private static final int ESTABLISH_MAX_RETRIES = 3;
+    private static final long ESTABLISH_RETRY_DELAY_MS = 500L;
     private static final String FALLBACK_DOH_URL = "https://1.1.1.1/dns-query";
 
     private static final String PREF_RESOLVER_MAX_RETRIES = "resolver_max_retries";
@@ -180,6 +182,9 @@ public class DNSService extends VpnService {
         super.onRevoke();
         vpnOperational.set(false);
         Timber.i("VPN revoked by system");
+        if (rxBus != null) {
+            rxBus.sendEvent(new StopEvent());
+        }
         stopThisService();
     }
 
@@ -337,6 +342,10 @@ public class DNSService extends VpnService {
         if (dnsRouter != null) {
             dnsRouter.close();
             dnsRouter = null;
+        }
+        if (dnsServerSelector != null) {
+            dnsServerSelector.close();
+            dnsServerSelector = null;
         }
         selectedServer = null;
         if (fileDescriptor != null) {
@@ -821,10 +830,27 @@ public class DNSService extends VpnService {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     tunnelBuilder.addDisallowedApplication(getPackageName());
                 }
-                setFileDescriptor(tunnelBuilder.establish());
+                setFileDescriptor(null);
+
+                int establishAttempts = 0;
+                while (fileDescriptor == null && establishAttempts < ESTABLISH_MAX_RETRIES) {
+                    establishAttempts++;
+                    if (establishAttempts > 1) {
+                        Timber.w("VPN establish attempt %d/%d — waiting before retry",
+                                establishAttempts, ESTABLISH_MAX_RETRIES);
+                        try {
+                            Thread.sleep(ESTABLISH_RETRY_DELAY_MS * establishAttempts);
+                        } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                            break;
+                        }
+                        if (!isRunning.get()) break;
+                    }
+                    setFileDescriptor(tunnelBuilder.establish());
+                }
 
                 if (fileDescriptor == null) {
-                    Timber.e("Failed to establish VPN");
+                    Timber.e("Failed to establish VPN after %d attempts", establishAttempts);
                     stopThisService();
                     return;
                 }
@@ -863,8 +889,11 @@ public class DNSService extends VpnService {
                 tunWriterThread.setDaemon(true);
                 tunWriterThread.start();
 
-                try (FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor())) {
-                    FileChannel readChannel = inputStream.getChannel();
+                FileInputStream inputStream = null;
+                FileChannel readChannel = null;
+                try {
+                    inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
+                    readChannel = inputStream.getChannel();
                     outputStream = new FileOutputStream(fileDescriptor.getFileDescriptor());
                     ByteBuffer directBuffer = ByteBuffer.allocateDirect(PACKET_BUFFER_SIZE);
 
@@ -905,6 +934,20 @@ public class DNSService extends VpnService {
                         } catch (Exception e) {
                             if (isRunning.get()) Timber.e(e, "Error processing TUN packet");
                         }
+                    }
+                } catch (Exception exception) {
+                    if (isRunning.get()) Timber.e(exception);
+                } finally {
+                    closeOutputStream();
+                    if (readChannel != null) {
+                        try { readChannel.close(); } catch (IOException ignored) {}
+                    }
+                    if (inputStream != null) {
+                        try { inputStream.close(); } catch (IOException ignored) {}
+                    }
+                    isRunning.set(false);
+                    if (Thread.currentThread() == mThread) {
+                        mThread = null;
                     }
                 }
             } catch (Exception exception) {

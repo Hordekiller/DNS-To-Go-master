@@ -13,4 +13,11 @@ public interface DnsResolver {
      * Closes any resources associated with this resolver.
      */
     void close();
+
+    /**
+     * Returns true if this resolver has been closed and should not be reused.
+     */
+    default boolean isClosed() {
+        return false;
+    }
 }
