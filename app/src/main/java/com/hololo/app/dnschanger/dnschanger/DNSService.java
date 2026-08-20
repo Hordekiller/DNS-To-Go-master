@@ -374,11 +374,12 @@ public class DNSService extends VpnService {
     }
 
     private synchronized void selectBestServer() {
-        if (dnsServerSelector == null || dnsModel == null) {
+        DNSModel model = dnsModel;
+        if (dnsServerSelector == null || model == null) {
             return;
         }
         try {
-            DnsServerSelector.Selection selection = dnsServerSelector.select(dnsModel);
+            DnsServerSelector.Selection selection = dnsServerSelector.select(model);
             selectedServer = selection.getServer();
             selectionReport = selection.getReport();
             Timber.i("DNS server selection: %s | %s | %dms | verified=%b",
@@ -430,7 +431,8 @@ public class DNSService extends VpnService {
                         stopThisService();
                     }
                 } else if (o instanceof GetServiceInfo) {
-                    rxBus.sendEvent(new ServiceInfo(dnsModel));
+                    DNSModel model = dnsModel;
+                    rxBus.sendEvent(new ServiceInfo(model));
                 }
             },
             throwable -> {
@@ -477,8 +479,9 @@ public class DNSService extends VpnService {
         String downUsage = formatBytes(downloadedBytes.get());
         String upUsage = formatBytes(uploadedBytes.get());
 
+        DNSModel model = dnsModel;
         String status = isRunning.get()
-                ? (dnsModel != null ? getString(R.string.connected_to, serverName()) : getString(R.string.dns_turbo_active))
+                ? (model != null ? getString(R.string.connected_to, serverName()) : getString(R.string.dns_turbo_active))
                 : getString(R.string.disconnected);
 
         String contentText = status
@@ -556,7 +559,8 @@ public class DNSService extends VpnService {
     private String serverName() {
         DnsServer server = selectedServer;
         if (server != null && server.getName() != null) return server.getName();
-        return dnsModel != null ? dnsModel.getName() : getString(R.string.dns_turbo_active);
+        DNSModel model = dnsModel;
+        return model != null ? model.getName() : getString(R.string.dns_turbo_active);
     }
 
     private void closeResources() {
@@ -803,25 +807,31 @@ public class DNSService extends VpnService {
 
         mThread = new Thread(() -> {
             try {
-                String modelJSON = gson.toJson(dnsModel);
+                DNSModel model = dnsModel;
+                if (model == null) {
+                    Timber.e("DNSModel is null at tunnel start");
+                    stopThisService();
+                    return;
+                }
+                String modelJSON = gson.toJson(model);
                 preferences.edit().putString("dnsModel", modelJSON).apply();
 
                 VpnService.Builder tunnelBuilder = new VpnService.Builder();
                 tunnelBuilder.setSession(DNSService.this.getText(R.string.app_name).toString())
                         .addAddress("192.168.0.1", 24)
                         .addAddress("fd00:1::1", 128)
-                        .addDnsServer(dnsModel.getFirstDns());
+                        .addDnsServer(model.getFirstDns());
 
-                addDnsRoute(tunnelBuilder, dnsModel.getFirstDns());
+                addDnsRoute(tunnelBuilder, model.getFirstDns());
 
                 applyAppFilter(tunnelBuilder);
                 
-                Timber.i("Starting VPN with DNS: %s", dnsModel.getFirstDns());
+                Timber.i("Starting VPN with DNS: %s", model.getFirstDns());
 
-                if (dnsModel.getSecondDns() != null && !dnsModel.getSecondDns().isEmpty()) {
-                    tunnelBuilder.addDnsServer(dnsModel.getSecondDns());
-                    addDnsRoute(tunnelBuilder, dnsModel.getSecondDns());
-                    Timber.i("Secondary DNS added: %s", dnsModel.getSecondDns());
+                if (model.getSecondDns() != null && !model.getSecondDns().isEmpty()) {
+                    tunnelBuilder.addDnsServer(model.getSecondDns());
+                    addDnsRoute(tunnelBuilder, model.getSecondDns());
+                    Timber.i("Secondary DNS added: %s", model.getSecondDns());
                 }
 
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
@@ -1023,14 +1033,15 @@ public class DNSService extends VpnService {
         }
 
         // Fallback: construct fallback candidates from model & repo
-        if (dnsModel != null) {
-            String primaryIp = dnsModel.getFirstDns();
-            String secondaryIp = dnsModel.getSecondDns();
-            DnsType primaryType = inferDnsType(dnsModel);
+        DNSModel model = dnsModel;
+        if (model != null) {
+            String primaryIp = model.getFirstDns();
+            String secondaryIp = model.getSecondDns();
+            DnsType primaryType = inferDnsType(model);
 
             if (primaryIp != null && !primaryIp.isEmpty()) {
                 DnsServer fallbackServer = new DnsServer(
-                        "fallback_primary", dnsModel.getName(), dnsModel.getCategory(),
+                        "fallback_primary", model.getName(), model.getCategory(),
                         primaryType, null, null, primaryIp, null,
                         primaryType == DnsType.DOH ? 443 : (primaryType == DnsType.DOT ? 853 : 53),
                         primaryIp.startsWith("http") ? primaryIp : null
@@ -1041,7 +1052,7 @@ public class DNSService extends VpnService {
             }
             if (secondaryIp != null && !secondaryIp.isEmpty() && !secondaryIp.equals(primaryIp)) {
                 DnsServer fallbackServer2 = new DnsServer(
-                        "fallback_secondary", dnsModel.getName(), dnsModel.getCategory(),
+                        "fallback_secondary", model.getName(), model.getCategory(),
                         DnsType.PLAIN_UDP, null, null, secondaryIp, null, 53, null
                 );
                 if (router != null && tryResolveWithRouter(router, fallbackServer2, rawQuery, originalPacket, dnsOffset, domain, type)) {
