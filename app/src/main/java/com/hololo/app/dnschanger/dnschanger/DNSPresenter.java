@@ -75,6 +75,27 @@ public class DNSPresenter {
         return PreferenceManager.getDefaultSharedPreferences(context).getBoolean("isStarted", false);
     }
 
+    public void clearStartedFlag() {
+        PreferenceManager.getDefaultSharedPreferences(context)
+                .edit()
+                .putBoolean("isStarted", false)
+                .apply();
+    }
+
+    public boolean isServiceRunning() {
+        android.app.ActivityManager manager =
+                (android.app.ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        if (manager != null) {
+            for (android.app.ActivityManager.RunningServiceInfo service
+                    : manager.getRunningServices(Integer.MAX_VALUE)) {
+                if (DNSService.class.getName().equals(service.service.getClassName())) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     void getServiceStatus() {
         if (isWorking()) {
             getServiceInfo();

@@ -786,8 +786,23 @@ public class DNSService extends VpnService {
             return Service.START_NOT_STICKY;
         }
 
+        // Keep the model alive across the stop below: stopTunnel(false) clears the
+        // instance field, so capture it and restore it before the new thread starts.
+        DNSModel incomingModel = dnsModel;
+
         if (isRunning.get()) {
             stopTunnel(false);
+        }
+
+        // Re-apply the model after stopTunnel(false) nulled the instance field.
+        if (incomingModel != null) {
+            dnsModel = incomingModel;
+        }
+
+        if (dnsModel == null) {
+            Timber.e("Cannot restart DNS tunnel without a DNS model");
+            stopTunnel(true);
+            return Service.START_NOT_STICKY;
         }
 
         initResolveExecutor();

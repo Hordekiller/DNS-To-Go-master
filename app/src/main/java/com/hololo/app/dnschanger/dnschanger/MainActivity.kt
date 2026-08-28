@@ -128,8 +128,13 @@ class MainActivity : AppCompatActivity(), IDNSView {
 
     private fun startDNS(model: DNSModel) {
         if (presenter.isWorking) {
-            presenter.stopService()
-            return
+            if (presenter.isServiceRunning()) {
+                presenter.stopService()
+                return
+            }
+            // Service is flagged started but not actually running (e.g. killed by system).
+            // Clear the stale flag and start fresh instead of getting stuck.
+            presenter.clearStartedFlag()
         }
 
         val intent = VpnService.prepare(this)
@@ -342,7 +347,7 @@ class MainActivity : AppCompatActivity(), IDNSView {
             presenter.getServiceInfo()
         } else {
             if (presenter.isWorking) {
-                preferences?.edit()?.putBoolean("isStarted", false)?.apply()
+                presenter.clearStartedFlag()
             }
             serviceStopped()
         }
@@ -463,8 +468,13 @@ class MainActivity : AppCompatActivity(), IDNSView {
 
     private fun startDNS() {
         if (presenter.isWorking) {
-            presenter.stopService()
-            return
+            if (presenter.isServiceRunning()) {
+                presenter.stopService()
+                return
+            }
+            // Service flagged started but not actually running (killed by system).
+            // Clear stale flag and start fresh instead of getting stuck.
+            presenter.clearStartedFlag()
         }
 
         val model = currentModel

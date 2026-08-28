@@ -12,8 +12,8 @@ android {
         applicationId "com.hololo.app.dnschanger"
         minSdk 21
         targetSdk 34
-        versionCode 8
-        versionName "2.6.7"
+        versionCode 9
+        versionName "2.6.8"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
     
