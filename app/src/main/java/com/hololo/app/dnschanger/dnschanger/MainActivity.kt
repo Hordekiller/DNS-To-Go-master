@@ -53,6 +53,7 @@ import com.hololo.app.dnschanger.DNSChangerApp
 import com.hololo.app.dnschanger.R
 import com.hololo.app.dnschanger.about.AboutActivity
 import com.hololo.app.dnschanger.model.DNSModel
+import com.hololo.app.dnschanger.model.DnsModelSelection
 import com.hololo.app.dnschanger.model.DnsServerRepository
 import com.hololo.app.dnschanger.model.DnsType
 import com.hololo.app.dnschanger.ui.screens.DnsPickerDialog
@@ -95,9 +96,12 @@ class MainActivity : AppCompatActivity(), IDNSView {
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
         if (result.resultCode == RESULT_OK) {
-            val model = pendingVpnModel ?: currentModel
+            val model = pendingVpnModel ?: DnsModelSelection.forStart(
+                selectedModel, state.primaryDns, state.secondaryDns, getString(R.string.custom_dns)
+            )
             pendingVpnModel = null
-            presenter.startService(model)
+            if (DnsModelSelection.isStartable(model)) presenter.startService(model)
+            else showToast(getString(R.string.enter_valid_dns))
         } else {
             pendingVpnModel = null
             showToast(getString(R.string.enter_valid_dns))
@@ -315,13 +319,6 @@ class MainActivity : AppCompatActivity(), IDNSView {
         }
     }
 
-    private val currentModel: DNSModel
-        get() = DNSModel().apply {
-            name = getString(R.string.custom_dns)
-            firstDns = state.primaryDns
-            secondDns = state.secondaryDns
-        }
-
     private fun checkPermissions() {
         val toRequest = mutableListOf<String>()
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -477,31 +474,21 @@ class MainActivity : AppCompatActivity(), IDNSView {
             presenter.clearStartedFlag()
         }
 
-        val model = currentModel
+        val model = DnsModelSelection.forStart(
+            selectedModel, state.primaryDns, state.secondaryDns, getString(R.string.custom_dns)
+        )
+        if (!DnsModelSelection.isStartable(model)) {
+            showToast(getString(R.string.enter_valid_dns))
+            return
+        }
         pendingVpnModel = model
 
-        // Validate Android 13+ notification permission
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            if (checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED
-            ) {
-                Timber.w("Cannot start VPN - POST_NOTIFICATIONS permission not granted")
-                showToast("Notification permission required to run VPN service")
-                checkPermissions()
-                return
-            }
-        }
-
-        // Validate Android 14+ foreground service permission
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            if (checkSelfPermission(Manifest.permission.FOREGROUND_SERVICE_SPECIAL_USE)
-                != PackageManager.PERMISSION_GRANTED
-            ) {
-                Timber.w("Cannot start VPN - FOREGROUND_SERVICE_SPECIAL_USE permission not granted")
-                showToast("Foreground service permission required for Android 14+")
-                checkPermissions()
-                return
-            }
+        // Android 13+: without notification permission the foreground service still
+        // runs (its notification is just hidden), so ask but never block the VPN.
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            Timber.w("POST_NOTIFICATIONS not granted - starting VPN without a visible notification")
         }
 
         // All permissions validated — proceed with VPN setup

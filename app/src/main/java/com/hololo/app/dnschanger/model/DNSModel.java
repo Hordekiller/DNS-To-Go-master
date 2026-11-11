@@ -74,6 +74,22 @@ public class DNSModel implements Parcelable {
 
     public DNSModel() {}
 
+    /** Copy constructor (keeps provider group / protocol identification). */
+    public DNSModel(DNSModel other) {
+        this.name = other.name;
+        this.firstDns = other.firstDns;
+        this.secondDns = other.secondDns;
+        this.ipv6 = other.ipv6;
+        this.category = other.category;
+        this.description = other.description;
+        this.customName = other.customName;
+        this.features = other.features != null ? new java.util.ArrayList<>(other.features) : new java.util.ArrayList<>();
+        this.serverGroupId = other.serverGroupId;
+        this.bestProtocol = other.bestProtocol;
+        this.lastStatus = other.lastStatus;
+        this.lastPing = other.lastPing;
+    }
+
     @Override
     public int describeContents() { return 0; }
 

@@ -17,4 +17,20 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory android:title="@string/privacy_settings">
+
+        <SwitchPreference
+            android:defaultValue="false"
+            android:key="strict_encrypted_dns"
+            android:summary="@string/strict_encrypted_dns_summary"
+            android:title="@string/strict_encrypted_dns" />
+
+        <SwitchPreference
+            android:defaultValue="true"
+            android:key="allow_fallback_resolver"
+            android:summary="@string/allow_fallback_resolver_summary"
+            android:title="@string/allow_fallback_resolver" />
+
+    </PreferenceCategory>
+
 </PreferenceScreen>

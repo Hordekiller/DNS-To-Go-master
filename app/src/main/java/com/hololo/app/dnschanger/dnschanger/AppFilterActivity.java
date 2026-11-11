@@ -49,6 +49,7 @@ public class AppFilterActivity extends AppCompatActivity {
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
     private static final String PREF_SELECTED_APPS = "selected_apps";
+    private boolean selectionChanged;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -119,7 +120,7 @@ public class AppFilterActivity extends AppCompatActivity {
                 .edit()
                 .putStringSet(PREF_SELECTED_APPS, selected)
                 .apply();
-        
+        selectionChanged = true;
         checkAndNotifyRestart();
     }
 
@@ -137,6 +138,21 @@ public class AppFilterActivity extends AppCompatActivity {
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        // Per-app routing is fixed when the tunnel is built, so rebuild it once when
+        // the user leaves this screen (the toast promised a restart that never happened).
+        if (selectionChanged && PreferenceManager.getDefaultSharedPreferences(this).getBoolean("isStarted", false)) {
+            selectionChanged = false;
+            try {
+                startService(new Intent(this, DNSService.class).setAction(DNSService.ACTION_RECONNECT));
+            } catch (RuntimeException e) {
+                // e.g. background start not allowed; applies on next connect
+            }
+        }
     }
 
     @Override

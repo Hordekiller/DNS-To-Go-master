@@ -24,4 +24,9 @@
     <string name="general_settings">Genel Ayarlar</string>
     <string name="disconnect">Bağlantıyı kes</string>
     <string name="reconnect">Yeniden bağlan</string>
+    <string name="privacy_settings">Gizlilik</string>
+    <string name="strict_encrypted_dns">Katı şifreli DNS</string>
+    <string name="strict_encrypted_dns_summary">Yalnızca DoH/DoT kullan. Asla şifresiz DNS sunucusuna veya başka bir sağlayıcıya geri dönme; şifreli sunucu yanıt vermezse sorgular başarısız olur. Yeniden bağlanınca etkinleşir.</string>
+    <string name="allow_fallback_resolver">Yedek çözümleyici</string>
+    <string name="allow_fallback_resolver_summary">Seçili sağlayıcı yanıt vermezse Cloudflare DoH kullan (günlüklerde Cloudflare Fallback olarak görünür). Katı modda yok sayılır.</string>
 </resources>

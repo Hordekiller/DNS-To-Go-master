@@ -78,4 +78,9 @@
     <string name="blocked_label">مسدود شده</string>
     <string name="block_rate">نرخ مسدودسازی</string>
     <string name="tab_logs">لاگ‌ها</string>
+    <string name="privacy_settings">حریم خصوصی</string>
+    <string name="strict_encrypted_dns">فقط DNS رمزنگاری‌شده</string>
+    <string name="strict_encrypted_dns_summary">فقط از DoH/DoT استفاده شود. هرگز به DNS بدون رمز یا ارائه‌دهنده دیگر بازنگردد؛ اگر سرور رمزنگاری‌شده پاسخ ندهد درخواست ناموفق می‌شود. پس از اتصال مجدد اعمال می‌شود.</string>
+    <string name="allow_fallback_resolver">سرور جایگزین</string>
+    <string name="allow_fallback_resolver_summary">اگر ارائه‌دهنده انتخاب‌شده پاسخ ندهد، از Cloudflare DoH استفاده شود (در گزارش‌ها با عنوان Cloudflare Fallback). در حالت سخت‌گیرانه نادیده گرفته می‌شود.</string>
 </resources>

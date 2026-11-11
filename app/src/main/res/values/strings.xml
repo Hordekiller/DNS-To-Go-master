@@ -94,4 +94,9 @@
     <string name="blocked_label">BLOCKED</string>
     <string name="block_rate">BLOCK RATE</string>
     <string name="tab_logs">Logs</string>
+    <string name="privacy_settings">Privacy</string>
+    <string name="strict_encrypted_dns">Strict encrypted DNS</string>
+    <string name="strict_encrypted_dns_summary">Only use DoH/DoT. Never fall back to plaintext DNS or another provider; queries fail if no encrypted server answers. Takes effect on reconnect.</string>
+    <string name="allow_fallback_resolver">Fallback resolver</string>
+    <string name="allow_fallback_resolver_summary">If the selected provider does not answer, use Cloudflare DoH (shown as Cloudflare Fallback in logs). Ignored in strict mode.</string>
 </resources>
