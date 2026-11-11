@@ -56,7 +56,8 @@ public class StatsManager {
     }
 
     private void maybePersist(Context context) {
-        int count = persistCounter.updateAndGet(v -> (v + 1) % PERSIST_INTERVAL);
+        // AtomicInteger.updateAndGet is API 24+; minSdk is 21.
+        int count = persistCounter.incrementAndGet() % PERSIST_INTERVAL;
         if (count != 0) return;
 
         SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
