@@ -20,6 +20,9 @@ jobs:
           java-version: 17
           distribution: temurin
 
+      - name: Unit tests and lint
+        run: ./gradlew testDebugUnitTest lintDebug
+
       - name: Decode keystore
         run: |
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/my-release-key.jks
@@ -34,5 +37,7 @@ jobs:
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
-          files: app/build/outputs/apk/release/app-release.apk
+          files: |
+            app/build/outputs/apk/release/app-release.apk
+            app/build/outputs/mapping/release/mapping.txt
           generate_release_notes: true

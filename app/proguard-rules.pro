@@ -3,7 +3,7 @@
 -keepattributes Signature
 -keepattributes Exceptions
 -keepattributes SourceFile,LineNumberTable
--printmapping mapping.txt
+# Mapping is written by AGP to app/build/outputs/mapping/<variant>/mapping.txt
 
 # Disabling optimizations as requested to prevent aggressive class merging
 -dontoptimize

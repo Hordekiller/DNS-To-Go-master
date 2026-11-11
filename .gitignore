@@ -13,3 +13,7 @@ keystore.properties
 *.apk
 *.aab
 app/build/
+# Signing credentials and R8 mapping must never be committed
+signing.properties
+app/signing.properties
+app/mapping.txt
