@@ -48,6 +48,8 @@ public class LogManager {
     private static final Gson gson = new GsonBuilder().create();
 
     private static final List<DnsLogEntry> pendingLogs = new ArrayList<>();
+    /** In-memory copy of the persisted history, loaded once (newest first). */
+    private static List<DnsLogEntry> history;
     private static final AtomicInteger sequenceId = new AtomicInteger(0);
     private static final ExecutorService flushExecutor = Executors.newSingleThreadExecutor(r -> {
         Thread t = new Thread(r, "LogManager");
@@ -67,25 +69,34 @@ public class LogManager {
 
     public static synchronized void flush(Context context) {
         if (pendingLogs.isEmpty()) return;
-
-        List<DnsLogEntry> logs = getLogs(context);
-        logs.addAll(0, pendingLogs);
-        pendingLogs.clear();
-
-        if (logs.size() > MAX_LOGS) {
-            logs = new ArrayList<>(logs.subList(0, MAX_LOGS));
+        final Context app = context.getApplicationContext() != null ? context.getApplicationContext() : context;
+        if (history == null) {
+            history = readPersisted(app); // one-time parse instead of on every flush
         }
-
-        List<DnsLogEntry> finalLogs = logs;
-        flushExecutor.execute(() -> {
-            PreferenceManager.getDefaultSharedPreferences(context)
-                    .edit()
-                    .putString(PREF_LOGS, gson.toJson(finalLogs))
-                    .apply();
-        });
+        history.addAll(0, pendingLogs);
+        pendingLogs.clear();
+        if (history.size() > MAX_LOGS) {
+            history = new ArrayList<>(history.subList(0, MAX_LOGS));
+        }
+        final List<DnsLogEntry> snapshot = new ArrayList<>(history);
+        flushExecutor.execute(() -> PreferenceManager.getDefaultSharedPreferences(app)
+                .edit()
+                .putString(PREF_LOGS, gson.toJson(snapshot))
+                .apply());
     }
 
     public static List<DnsLogEntry> getLogs(Context context) {
+        synchronized (LogManager.class) {
+            if (history != null) {
+                List<DnsLogEntry> all = new ArrayList<>(pendingLogs);
+                all.addAll(history);
+                return all.size() > MAX_LOGS ? new ArrayList<>(all.subList(0, MAX_LOGS)) : all;
+            }
+        }
+        return readPersisted(context);
+    }
+
+    private static List<DnsLogEntry> readPersisted(Context context) {
         String logsJson = PreferenceManager.getDefaultSharedPreferences(context).getString(PREF_LOGS, "[]");
         if (logsJson == null || logsJson.equals("[]")) {
             return new ArrayList<>();
@@ -116,6 +127,7 @@ public class LogManager {
     public static void clearLogs(Context context) {
         synchronized (LogManager.class) {
             pendingLogs.clear();
+            history = new ArrayList<>();
         }
         sequenceId.set(0);
         PreferenceManager.getDefaultSharedPreferences(context).edit().remove(PREF_LOGS).apply();

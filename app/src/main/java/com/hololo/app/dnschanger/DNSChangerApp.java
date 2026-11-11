@@ -39,6 +39,13 @@ public class DNSChangerApp extends Application {
         // Plant a tree that saves logs to LogManager
         Timber.plant(new Timber.Tree() {
             @Override
+            protected boolean isLoggable(String tag, int priority) {
+                // Only persist INFO and above. DEBUG/VERBOSE lines carry per-query
+                // details and stack traces that must not be written to storage.
+                return priority >= android.util.Log.INFO;
+            }
+
+            @Override
             protected void log(int priority, String tag, String message, Throwable t) {
                 String level = "INFO";
                 switch (priority) {
