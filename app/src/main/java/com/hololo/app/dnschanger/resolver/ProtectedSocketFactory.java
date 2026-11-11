@@ -1,7 +1,6 @@
 package com.hololo.app.dnschanger.resolver;
 
 import android.net.VpnService;
-import android.util.Log;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -55,13 +54,8 @@ public class ProtectedSocketFactory extends SocketFactory {
                 socket.bind(new InetSocketAddress(0));
 
                 boolean ok = vpnService.protect(socket);
-                Log.d("DNSDebug", "protect " + attemptLabel
-                        + " ok=" + ok
-                        + " vpnRef=" + System.identityHashCode(vpnService)
-                        + " bound=" + socket.isBound()
-                        + " connected=" + socket.isConnected()
-                        + " closed=" + socket.isClosed()
-                        + " thread=" + Thread.currentThread().getName());
+                Timber.v("protect %s ok=%b bound=%b connected=%b thread=%s", attemptLabel, ok,
+                        socket.isBound(), socket.isConnected(), Thread.currentThread().getName());
 
                 if (ok) {
                     Timber.d("Socket protected successfully %s", attemptLabel);

@@ -12,8 +12,6 @@ public final class DnsServerRepository {
     private static final String ADBLOCK = "ADBLOCK";
     private static final String INTERNATIONAL = "INTERNATIONAL";
 
-    private static final String GENERIC_BOOTSTRAP = "1.1.1.1";
-
     private DnsServerRepository() {}
 
     public static List<DnsServer> getAllServers() {
@@ -85,7 +83,10 @@ public final class DnsServerRepository {
 
     private static void addProvider(List<DnsServer> servers, String idPrefix, String name, String category,
                                    String primaryIp, String secondaryIp, String dohUrl, String dotHostname) {
-        String bootstrap = (primaryIp != null && !primaryIp.isEmpty()) ? primaryIp : GENERIC_BOOTSTRAP;
+        // Only the provider's own published IP may serve as bootstrap. (A generic
+        // third-party IP such as 1.1.1.1 would send DoT for e.g. dns.nextdns.io to
+        // Cloudflare.) Without one, the hostname is resolved by the system resolver.
+        String bootstrap = (primaryIp != null && !primaryIp.isEmpty()) ? primaryIp : null;
 
         if (dohUrl != null) {
             servers.add(new DnsServer(idPrefix + "_doh", name + " DoH", category, DnsType.DOH, 

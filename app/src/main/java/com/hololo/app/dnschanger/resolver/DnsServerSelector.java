@@ -44,7 +44,18 @@ public class DnsServerSelector {
     }
 
     public Selection select(DNSModel model) {
-        List<DnsServer> candidates = candidatesFor(model);
+        return select(model, false);
+    }
+
+    /**
+     * Probes the candidates for {@code model}. An encrypted (DoH/DoT) endpoint that
+     * answers always wins over plaintext, regardless of latency: a cold DoH probe pays
+     * for a TLS handshake that later queries reuse, so a latency-only comparison would
+     * systematically downgrade users to plaintext. In strict mode plaintext endpoints
+     * are never candidates.
+     */
+    public Selection select(DNSModel model, boolean strictEncrypted) {
+        List<DnsServer> candidates = candidatesFor(model, strictEncrypted);
         if (candidates.isEmpty()) {
             return Selection.unavailable("No DNS endpoint candidates");
         }
@@ -57,7 +68,7 @@ public class DnsServerSelector {
             for (DnsServer server : candidates) {
                 Probe probe = probe(router, server, probeQuery);
                 probes.add(probe);
-                if (probe.isSuccessful() && (bestProbe == null || probe.score() < bestProbe.score())) {
+                if (probe.isSuccessful() && (bestProbe == null || probe.isBetterThan(bestProbe))) {
                     bestProbe = probe;
                 }
             }
@@ -74,6 +85,25 @@ public class DnsServerSelector {
     }
 
     public static List<DnsServer> candidatesFor(DNSModel model) {
+        return candidatesFor(model, false);
+    }
+
+    public static boolean isEncrypted(DnsType type) {
+        return type == DnsType.DOH || type == DnsType.DOT;
+    }
+
+    /** Candidates for the model; with {@code strictEncrypted} only DoH/DoT endpoints. */
+    public static List<DnsServer> candidatesFor(DNSModel model, boolean strictEncrypted) {
+        List<DnsServer> all = candidatesForInternal(model);
+        if (!strictEncrypted) return all;
+        List<DnsServer> encrypted = new ArrayList<>();
+        for (DnsServer server : all) {
+            if (isEncrypted(server.getType())) encrypted.add(server);
+        }
+        return encrypted;
+    }
+
+    private static List<DnsServer> candidatesForInternal(DNSModel model) {
         List<DnsServer> allServers = DnsServerRepository.getAllServers();
         List<DnsServer> matches = new ArrayList<>();
 
@@ -123,7 +153,13 @@ public class DnsServerSelector {
             ));
         }
 
-        matches.sort(Comparator.comparingInt(server -> protocolPriority(server.getType())));
+        // Stable sort by protocol priority (List.sort/Comparator.comparingInt need API 24).
+        java.util.Collections.sort(matches, new Comparator<DnsServer>() {
+            @Override
+            public int compare(DnsServer a, DnsServer b) {
+                return protocolPriority(a.getType()) - protocolPriority(b.getType());
+            }
+        });
         return dedupe(matches);
     }
 
@@ -132,7 +168,8 @@ public class DnsServerSelector {
         try {
             byte[] response = router.resolve(server, probeQuery);
             long latencyMs = Math.max(1L, (System.nanoTime() - start) / 1_000_000L);
-            if (isUsableDnsResponse(response)) {
+            if (isUsableDnsResponse(response)
+                    && com.hololo.app.dnschanger.dns.DnsMessage.isValidResponseFor(probeQuery, response)) {
                 return Probe.success(server, latencyMs);
             }
             return Probe.failure(server, "Invalid response");
@@ -279,6 +316,13 @@ public class DnsServerSelector {
 
         private long score() {
             return latencyMs + protocolPriority(server.getType()) * 25L;
+        }
+
+        private boolean isBetterThan(Probe other) {
+            boolean enc = isEncrypted(server.getType());
+            boolean otherEnc = isEncrypted(other.server.getType());
+            if (enc != otherEnc) return enc;
+            return score() < other.score();
         }
 
         private String getProtocolLabel() {

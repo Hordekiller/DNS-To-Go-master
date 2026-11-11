@@ -17,7 +17,8 @@ public class TcpDnsResolver implements DnsResolver {
     private final int port;
     private final VpnService vpnService;
     private final int timeoutMs;
-    private Socket socket;
+    private volatile Socket socket;
+    private volatile boolean closed;
 
     public TcpDnsResolver(DnsServer server) {
         this(server, null, 5000);
@@ -36,6 +37,7 @@ public class TcpDnsResolver implements DnsResolver {
 
     @Override
     public synchronized byte[] query(byte[] rawQuery) throws Exception {
+        if (closed) throw new IOException("TCP resolver closed");
         if (socket == null || socket.isClosed()) {
             connect();
         }
@@ -52,7 +54,7 @@ public class TcpDnsResolver implements DnsResolver {
             in.readFully(response);
             return response;
         } catch (IOException e) {
-            close();
+            closeSocket();
             throw e;
         }
     }
@@ -69,19 +71,30 @@ public class TcpDnsResolver implements DnsResolver {
         }
         sock.connect(new InetSocketAddress(ip, port), timeoutMs);
         sock.setSoTimeout(timeoutMs);
+        if (closed) {
+            sock.close();
+            throw new IOException("TCP resolver closed during connect");
+        }
         this.socket = sock;
     }
 
-    @Override
-    public void close() {
-        if (socket != null) {
-            try { socket.close(); } catch (IOException ignored) {}
-            socket = null;
+    private void closeSocket() {
+        Socket s = socket;
+        socket = null;
+        if (s != null) {
+            try { s.close(); } catch (IOException ignored) {}
         }
     }
 
     @Override
+    public void close() {
+        closed = true;
+        closeSocket();
+    }
+
+    /** True only after {@link #close()}; a not-yet-connected resolver is reusable. */
+    @Override
     public boolean isClosed() {
-        return socket == null || socket.isClosed();
+        return closed;
     }
 }

@@ -81,7 +81,7 @@ public class DnsRouter {
             DnsType type = server.getType();
             if (type == DnsType.DOH) {
                 CertificatePinner pinner = buildCertificatePinner(server);
-                resolver = new DohResolver(server, client, pinner);
+                resolver = new DohResolver(server, clientWithBootstrap(server), pinner);
             } else if (type == DnsType.DOT) {
                 resolver = new DotResolver(server, vpnService, config.getDotTimeoutMs());
             } else if (type == DnsType.PLAIN_TCP) {
@@ -111,6 +111,19 @@ public class DnsRouter {
         } finally {
             lock.writeLock().unlock();
         }
+    }
+
+    /** DoH client that falls back to the provider's published IPs for its hostname. */
+    private OkHttpClient clientWithBootstrap(DnsServer server) {
+        String host = server.getHostname();
+        if (host == null || host.isEmpty()) return client;
+        java.util.List<String> ips = new java.util.ArrayList<>();
+        if (server.getPrimaryIp() != null) ips.add(server.getPrimaryIp());
+        if (server.getSecondaryIp() != null) ips.add(server.getSecondaryIp());
+        if (ips.isEmpty()) return client;
+        return client.newBuilder()
+                .dns(new StaticDns(host, ips, okhttp3.Dns.SYSTEM::lookup))
+                .build();
     }
 
     private CertificatePinner buildCertificatePinner(DnsServer server) {
