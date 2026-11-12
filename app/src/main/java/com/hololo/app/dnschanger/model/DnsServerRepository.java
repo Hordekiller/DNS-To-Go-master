@@ -18,7 +18,7 @@ public final class DnsServerRepository {
         List<DnsServer> servers = new ArrayList<>();
 
         // --- Category 1: IRAN (Anti-Sanction) ---
-        addProvider(servers, "shecan", "Shecan", IRAN, "178.22.122.100", "185.51.200.2", "https://free.shecan.ir/dns-query", "free.shecan.ir");
+        addProvider(servers, "dns_pro", "DNS Pro", IRAN, "87.107.110.109", "87.107.110.110", null, null);
         addProvider(servers, "403_online", "403.online", IRAN, "10.202.10.202", "10.202.10.102", "https://dns.403.online/dns-query", "dns.403.online");
         addProvider(servers, "electro", "Electro", IRAN, "78.157.42.100", "78.157.42.101", null, null);
         addProvider(servers, "begzar", "Begzar", IRAN, "185.55.226.26", "185.55.225.25", null, null);
@@ -26,7 +26,7 @@ public final class DnsServerRepository {
         addProvider(servers, "zeus", "Zeus", IRAN, "37.32.5.60", "37.32.5.61", null, null);
         addProvider(servers, "shelter", "Shelter", IRAN, "94.103.125.157", "94.103.125.158", null, null);
         addProvider(servers, "pishgaman", "Pishgaman", IRAN, "5.202.100.100", "5.202.100.101", null, null);
-        addProvider(servers, "asiatech", "Asiatech", IRAN, "194.36.174.161", "178.22.122.100", null, null);
+        addProvider(servers, "asiatech", "Asiatech", IRAN, "194.36.174.161", null, null, null);
         addProvider(servers, "tci", "TCI (مخابرات)", IRAN, "217.218.155.155", "217.218.127.127", null, null);
         addProvider(servers, "shatel", "Shatel", IRAN, "85.15.1.14", "85.15.1.15", null, null);
         addProvider(servers, "hostiran", "Hostiran", IRAN, "172.29.0.100", "172.29.2.100", null, null);
@@ -45,6 +45,8 @@ public final class DnsServerRepository {
         addProvider(servers, "neustar", "Neustar/UltraDNS", PUBLIC, "156.154.70.1", "156.154.71.1", null, null);
         addProvider(servers, "opennic", "OpenNIC", PUBLIC, "169.239.202.202", null, null, null);
         addProvider(servers, "hurricane", "Hurricane Electric", PUBLIC, "74.82.42.42", null, null, null);
+        addProvider(servers, "quad101", "Quad101 (TWNIC)", PUBLIC, "101.101.101.101", "101.102.103.104", "https://dns.twnic.tw/dns-query", "dns.twnic.tw");
+        addProvider(servers, "dns4eu", "DNS4EU Unfiltered", PUBLIC, "86.54.11.100", "86.54.11.200", "https://unfiltered.joindns4.eu/dns-query", "unfiltered.joindns4.eu");
 
         // --- Category 3: PRIVACY ---
         addProvider(servers, "cf_malware", "Cloudflare Malware", PRIVACY, "1.1.1.2", "1.0.0.2", "https://security.cloudflare-dns.com/dns-query", "security.cloudflare-dns.com");
