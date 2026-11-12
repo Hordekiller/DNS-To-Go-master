@@ -1,7 +1,8 @@
 # DNS To Go — stabilization audit (Nov 2026)
 
 - **Base commit:** `aa2b9d472812dd5f5637eb74f5966d3029819602` (`origin/master`, v2.6.8, versionCode 9)
-- **Branch:** `fix/dns-vpn-stabilization`
+- **Branch:** `fix/dns-vpn-stabilization`, merged into `master` at `cd466fd`
+- **Released:** v2.6.9 (fixes in sections 1–2), v2.7.0 (catalog change and signing key rotation)
 - **Scope:** DNS correctness, VPN reliability, concurrency, security, regression tests. No new features.
 
 Legend: **C** = confirmed (reproduced by test or by running the original code), **R** = risk (code reading / needs device).
@@ -42,7 +43,7 @@ Severity: S1 critical (VPN unusable / traffic broken / security), S2 high, S3 me
 
 | Sev | Finding | Action taken | Needs owner |
 |-----|---------|--------------|-------------|
-| S1 | `app/signing.properties` with keystore/key passwords committed since `b45d1b8` (public repo). | Untracked + `.gitignore` | **Rotate the release key passwords** (and the key if the `.jks` was ever public — `8848b92` removed it from the tree, history still has it). History rewrite only with your approval. |
+| S1 | The release keystore (`b45d1b8`) and its real password (`app/build.gradle`, `bf27b2b` … `8e46d9a`) were public; `app/signing.properties` only held placeholders. | Untracked + `.gitignore` (v2.6.9); **key rotated with v3 lineage in v2.7.0** (see below) | Upload the rotation secrets (docs/RELEASING.md); back up the keys offline. Android 5–8 still trust the leaked original key. |
 | S3 | `app/mapping.txt` (240k lines) committed by `-printmapping`. | Untracked; mapping now attached to the GitHub release | — |
 | S3 | `.gitignore` ignored `release.yml`. | Removed | — |
 | S3 | Release workflow builds and publishes with no tests; third-party action pinned by tag. | Added `testDebugUnitTest lintDebug` step | Pin `softprops/action-gh-release` by SHA |
@@ -74,6 +75,14 @@ APK Signature Scheme v3 (`--rotation-min-sdk-version 28`):
   (`~/.android-keys/dns-to-go/`, mode 700) and in GitHub secrets
   (`NEW_KEYSTORE_BASE64`, `NEW_STORE_PASSWORD`, `NEW_KEY_ALIAS`, `SIGNING_LINEAGE_BASE64`).
   **Back them up offline. Losing them means no more updates on Android 9+.**
+
+### Release status (v2.7.0)
+
+- The `v2.7.0` tag CI run failed at *Sign with rotated key* (`The input file is not a valid
+  lineage file.`): the rotation secrets were not yet in the repository. Tests, lint and the
+  unsigned build passed. The published v2.7.0 APK was signed locally with the same lineage
+  and verified (SHA-256 `bb4101082b3dfe4b79b3efdc3e64b7868e30945d02cd9b933b142b13f0142b77`).
+- The workflow now has a *Check signing secrets* step that names any missing secret.
 
 ## 3. Remaining risks (need a real device / network)
 

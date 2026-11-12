@@ -1,63 +1,74 @@
-# Dns To Go - Advanced DNS Security & Optimization
+# Dns To Go — DNS changer for Android
 
-Dns To Go is a professional, high-performance DNS optimization and security tool for Android. It leverages modern network protocols to provide a secure, fast, and private browsing experience, especially focused on gaming and streaming performance.
+Dns To Go changes the DNS resolver for your Android device without root. It runs a local,
+DNS-only VPN: only DNS queries enter the tunnel, and they are answered through the provider
+you choose, preferably over encrypted DNS (DoH/DoT). It is aimed at Iranian users who
+want anti-sanction DNS, gaming and general privacy.
 
-## 🛡️ Key Features
+**Latest release:** [v2.7.0](https://github.com/Hordekiller/DNS-To-Go-master/releases/latest)
+· Android 5.0+ (minSdk 21, targetSdk 34) · English, فارسی, Türkçe
 
-- **DNS-over-HTTPS (DoH):** Uses RFC 8484 for fully encrypted DNS queries, bypassing ISP monitoring and regional blocks.
-- **Local DNS Resolver:** A robust, built-in resolver that parses IP (v4/v6) and UDP/53 traffic directly from a high-performance TUN interface.
-- **Per-App Routing:** Select precisely which applications should use the secure DNS tunnel.
-- **Intelligent DNS Cache:** Real-time TTL management to reduce latency to nearly zero for frequent queries.
-- **Advanced Ad-Blocking:** Integrated filtering engine with support for standard `hosts`, `AdGuard`, and `dnsmasq` blocklist formats.
-- **IPv6 Anti-Leak:** Complete protection against DNS leaks on IPv6 networks through comprehensive traffic routing.
-- **Live Monitoring & Stats:** Real-time dashboard showing today's query volume, blocked items, and performance metrics.
-- **Seamless Handover:** Robust handling of network changes (Wi-Fi to LTE) without connection drops.
-- **Gaming & Streaming Modes:** Pre-configured low-latency servers optimized for gaming and buffer-free streaming.
+## Features
 
-## 🚀 Release History
+- **53 providers in 5 groups**: Iran (anti-sanction), Public, Privacy, Ad-block and International.
+  Each provider can offer DoH, DoT and plain UDP; the app probes them and prefers an
+  encrypted endpoint that answers.
+- **Custom DNS**: enter any IPv4/IPv6 resolver address.
+- **DNS-only tunnel**: the VPN advertises virtual DNS addresses (`10.111.222.3`,
+  `fd66:f83a:c650::3`) and routes nothing else, so all other traffic uses your normal
+  connection untouched.
+- **Encrypted DNS**: DoH (RFC 8484) and DoT (RFC 7858) with certificate and hostname
+  verification and EDNS padding (RFC 7830).
+- **Strict encrypted DNS** (Settings → Privacy): never fall back to plaintext DNS or to
+  another provider.
+- **Fallback resolver** (on by default): if your provider does not answer, Cloudflare DoH is
+  used and shown as *Cloudflare Fallback* in the log.
+- **Per-app routing**: apply the DNS only to the apps you select.
+- **DNS cache** with correct TTL handling, plus a small built-in tracker blocklist.
+- **Query log** with CSV export, and daily query/blocked statistics.
+- **Network handover** (Wi-Fi ↔ mobile), auto-start after reboot, and always-on VPN support.
+- **IPv4 and IPv6** DNS queries, including IPv6 extension headers.
 
-### 🌟 Version 2.6.5 (Latest Release)
-- **Security Hardening:** DoT hostname verification + DoH certificate pinning via ResolverConfig.
-- **Performance:** Parallelized TUN packet processing with ring-buffer object pool & dynamic thread pool.
-- **Privacy:** EDNS0 padding (RFC 7830) to prevent size-based traffic fingerprinting.
-- **Bug Fix:** Non-DNS traffic no longer blocked — only DNS server IPs routed through TUN.
-- **Bug Fix:** Notification no longer restarts UI (launchMode singleTop + intent flags).
-- **Refactor:** Split large files (DNSService, MainActivity, MainScreen) into focused modules.
+Not included yet (see the [roadmap](docs/audit/2026-11-stabilization.md#4-roadmap-next-phase-prioritized)):
+importing blocklists from the UI, certificate pinning presets, and DNS-over-TCP from apps
+(those connections get an immediate reset so apps retry over UDP).
 
-### 🌟 Version 2.5.0
-- **Engine Overhaul:** Fully modernized `VpnService` implementation for Android 14 compatibility.
-- **Statistics Dashboard:** New UI section for real-time traffic insights (Total, Blocked, %).
-- **Professional Logs:** Structured logging with source identification (Cache, Upstream, Blocked) and CSV export.
-- **Network Handover:** Robust handling of Wi-Fi/Mobile transitions using `setUnderlyingNetworks`.
-- **Advanced Resolver:** Local packet parsing with IPv6 support and Ad-blocking engine.
+## How it works
 
-### 🛠️ Version 2.1.1 (Current)
-- **New Servers:** Added high-performance **Zeus** and **Bogzar** DNS providers.
-- **UI Sync Fix:** Resolved race conditions in connection status display (Instant UI updates).
-- **Stability Fixes:** Improved background reliability and thread management.
-- **Modernization:** Initial migration to Activity Result API.
-
-### 🏗️ Version 2.0.0
-- **UI Redesign:** Complete transition to Material Design 3.
-- **Base Engine:** Core implementation of the secure VPN tunnel.
-- **Localization:** Full support for English and Persian languages.
-- **Dark Mode:** System-wide dark theme support.
-
-## 🛠 Tech Stack
-
-- **Architecture:** MVP (Dagger 2 for DI)
-- **Networking:** OkHttp (RFC 8484), RxJava 2, Custom TUN Parser
-- **Performance:** Atomic Counters, Concurrent DNS Cache
-- **UI:** Material Design 3, MPAndroidChart
-- **Logging:** Timber with Persistent Ring-Buffer storage
-
-## 🏗 Build
-
-To build the signed APK, run:
-```shell
-./gradlew assembleRelease
+```
+app ──DNS query──▶ tun0 (10.111.222.3) ──▶ DnsQueryProcessor
+                                             ├─ blocklist   → NXDOMAIN
+                                             ├─ cache       → cached answer (TTL aged)
+                                             └─ upstreams   → DoH / DoT / UDP / TCP
+                                                              (validated, else SERVFAIL)
 ```
 
-## 📄 License
-This project is licensed under the MIT License.
-Copyright (c) 2026 HordeKiller.
+| Package | Responsibility |
+|---------|----------------|
+| `dns/` | Pure Java, unit-tested: `IpPacket` (IPv4/IPv6/UDP/TCP), `DnsMessage` (RFC 1035 parsing and validation), `DnsQueryProcessor`, `TunnelSession` (reader/writer threads and bounded worker pool per tunnel), `AppRoutingPolicy` |
+| `resolver/` | DoH (OkHttp), DoT, UDP and TCP resolvers; server selection and probing; protected sockets |
+| `model/` | Provider catalog (`DnsServerRepository`), `DNSModel`, model selection |
+| `dnschanger/` | `DNSService` (VpnService lifecycle on a single control thread), UI, boot receiver |
+
+## Build
+
+Requirements: JDK 17 and the Android SDK (platform 34).
+
+```shell
+./gradlew testDebugUnitTest lintDebug   # 77 unit tests incl. packet-level and Robolectric tests
+./gradlew assembleDebug                 # debug APK
+./gradlew assembleRelease               # unsigned release APK (signing is done by CI)
+```
+
+Releases are built, signed with `apksigner` (APK Signature Scheme v3 key rotation) and
+published by GitHub Actions when a `v*` tag is pushed. See [docs/RELEASING.md](docs/RELEASING.md).
+
+## Documentation
+
+- [CHANGELOG.md](CHANGELOG.md): release history
+- [docs/RELEASING.md](docs/RELEASING.md): signing keys, secrets and the release process
+- [docs/audit/2026-11-stabilization.md](docs/audit/2026-11-stabilization.md): audit report, known risks and roadmap
+
+## License
+
+MIT License. Copyright (c) 2026 HordeKiller.
