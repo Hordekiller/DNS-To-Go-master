@@ -51,7 +51,29 @@ Severity: S1 critical (VPN unusable / traffic broken / security), S2 high, S3 me
 | S4 | Unused permissions `SCHEDULE_EXACT_ALARM` (needs a Play declaration), `WAKE_LOCK`. | Removed | — |
 | S2 | **targetSdk 34**: Google Play requires API 35 for updates since 31 Aug 2025 and API 36 since 31 Aug 2026. Updates on Play are blocked (Myket unaffected). | Not changed (edge-to-edge enforcement in 35 changes the XML screens; needs visual QA) | Roadmap item 1 |
 | S4 | `QUERY_ALL_PACKAGES` absent → on Android 11+ the app filter lists only launcher apps. | Not changed (Play restricts that permission) | Product decision |
-| S4 | Catalog data: Asiatech secondary = Shecan IP; "Bogzar"; Freenom World is discontinued; `doh.pub` bootstrap IP unverified. | Not changed | Verify catalog |
+| S4 | Catalog data: Asiatech secondary was Shecan's IP; "Bogzar"; Freenom World is discontinued; `doh.pub` bootstrap IP unverified. | v2.7.0: Shecan removed (replaced by DNS Pro; Quad101 and DNS4EU Unfiltered added), Asiatech secondary removed | Verify remaining catalog entries on a device |
+
+### Signing key rotation (v2.7.0)
+
+The release keystore **and** its real password were public in this repository's
+history (commits `bf27b2b` … `8e46d9a`), so anyone could sign an APK that installs as
+an update. Changing the password cannot fix that. v2.7.0 therefore rotates the key with
+APK Signature Scheme v3 (`--rotation-min-sdk-version 28`):
+
+| Devices | Verified against | Certificate SHA-256 |
+|---------|------------------|---------------------|
+| Android 5–8 (API 21–27), v1/v2 | original key | `59563369…e15384aaa2221391` |
+| Android 9+ (API 28+), v3 lineage | new key `dnstogo-2026` (RSA 4096) | `ca44276a…2ad8c0ee6e2e962e8` |
+
+- Existing installs update normally. From v2.7.0 on, Android 9+ devices accept updates
+  only from the new key (or one it signs into a new lineage).
+- Android 5–8 still trust only the original key; that residual risk cannot be removed
+  without abandoning those users.
+- CI signs with `apksigner` and refuses to publish unless both fingerprints match.
+- The new key, its password and the lineage live outside the repo
+  (`~/.android-keys/dns-to-go/`, mode 700) and in GitHub secrets
+  (`NEW_KEYSTORE_BASE64`, `NEW_STORE_PASSWORD`, `NEW_KEY_ALIAS`, `SIGNING_LINEAGE_BASE64`).
+  **Back them up offline. Losing them means no more updates on Android 9+.**
 
 ## 3. Remaining risks (need a real device / network)
 

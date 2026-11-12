@@ -23,16 +23,40 @@ jobs:
       - name: Unit tests and lint
         run: ./gradlew testDebugUnitTest lintDebug
 
-      - name: Decode keystore
-        run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/my-release-key.jks
-
-      - name: Build Release APK
+      - name: Build unsigned release APK
         run: ./gradlew assembleRelease
+
+      # Key rotation (APK Signature Scheme v3 lineage): Android 5-8 verify the
+      # original key (v1/v2), Android 9+ verify the new key via the lineage.
+      - name: Sign with rotated key
         env:
-          STORE_PASSWORD: ${{ secrets.STORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          OLD_ALIAS: ${{ secrets.KEY_ALIAS }}
+          OLD_STORE_PASS: ${{ secrets.STORE_PASSWORD }}
+          OLD_KEY_PASS: ${{ secrets.KEY_PASSWORD }}
+          NEW_ALIAS: ${{ secrets.NEW_KEY_ALIAS }}
+          NEW_PASS: ${{ secrets.NEW_STORE_PASSWORD }}
+          OLD_KEYSTORE_B64: ${{ secrets.KEYSTORE_BASE64 }}
+          NEW_KEYSTORE_B64: ${{ secrets.NEW_KEYSTORE_BASE64 }}
+          LINEAGE_B64: ${{ secrets.SIGNING_LINEAGE_BASE64 }}
+        run: |
+          set -euo pipefail
+          K="$RUNNER_TEMP/keys"; mkdir -p "$K"; chmod 700 "$K"
+          trap 'rm -rf "$K"' EXIT
+          echo "$OLD_KEYSTORE_B64" | base64 -d > "$K/old.jks"
+          echo "$NEW_KEYSTORE_B64" | base64 -d > "$K/new.jks"
+          echo "$LINEAGE_B64" | base64 -d > "$K/lineage.bin"
+          BT=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          OUT=app/build/outputs/apk/release
+          "$BT/apksigner" sign --in "$OUT/app-release-unsigned.apk" --out "$OUT/app-release.apk" \
+            --ks "$K/old.jks" --ks-key-alias "$OLD_ALIAS" --ks-pass env:OLD_STORE_PASS --key-pass env:OLD_KEY_PASS \
+            --next-signer --ks "$K/new.jks" --ks-key-alias "$NEW_ALIAS" --ks-pass env:NEW_PASS --key-pass env:NEW_PASS \
+            --lineage "$K/lineage.bin" --rotation-min-sdk-version 28
+          # Refuse to publish unless both certificates are exactly the expected ones.
+          LEGACY=$("$BT/apksigner" verify --print-certs --min-sdk-version 21 --max-sdk-version 27 "$OUT/app-release.apk")
+          ROTATED=$("$BT/apksigner" verify --print-certs --min-sdk-version 28 "$OUT/app-release.apk")
+          grep -q "certificate SHA-256 digest: 59563369139ebf1f8cb4ee87c079a76865ac2ef24ec2f939e15384aaa2221391" <<< "$LEGACY"
+          grep -q "certificate SHA-256 digest: ca44276a677a1e06068b538882d9c890ee9d576109fa50e2ad8c0ee6e2e962e8" <<< "$ROTATED"
+          echo "Signature verified: old key for API 21-27, rotated key for API 28+"
 
       - name: Create Release
         uses: softprops/action-gh-release@v2
